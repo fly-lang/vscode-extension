@@ -1,0 +1,112 @@
+name: VSCode Extension
+
+on:
+  push:
+    branches: [main]
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+env:
+  EXTENSION_DIR: vscode
+
+jobs:
+
+  # ── Build & package ──────────────────────────────────────────────────────
+  build:
+    runs-on: ubuntu-latest
+
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+      vsix:    ${{ steps.meta.outputs.vsix }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: ${{ env.EXTENSION_DIR }}/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ${{ env.EXTENSION_DIR }}
+        run: npm ci
+
+      - name: Compile TypeScript
+        working-directory: ${{ env.EXTENSION_DIR }}
+        run: npm run compile
+
+      - name: Read extension metadata
+        id: meta
+        working-directory: ${{ env.EXTENSION_DIR }}
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=${VERSION}"               >> $GITHUB_OUTPUT
+          echo "vsix=vscode-fly-${VERSION}.vsix"  >> $GITHUB_OUTPUT
+
+      - name: Package (.vsix)
+        working-directory: ${{ env.EXTENSION_DIR }}
+        run: npx vsce package --out vscode-fly-${{ steps.meta.outputs.version }}.vsix
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vscode-fly-vsix
+          path: ${{ env.EXTENSION_DIR }}/${{ steps.meta.outputs.vsix }}
+          if-no-files-found: error
+
+  # ── GitHub Release ───────────────────────────────────────────────────────
+  release:
+    needs: [build]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: vscode-fly-vsix
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Fly VSCode Extension v${{ needs.build.outputs.version }}"
+          body: |
+            ## Fly Language Support for VSCode — v${{ needs.build.outputs.version }}
+
+            ### What's included
+            - Syntax highlighting for `.fly` and `.f` files
+            - Auto-closing brackets, block comments, and folding
+            - 22 built-in snippets (`class`, `struct`, `if`/`elsif`/`else`, `for-in`, `new<unique/shared>`, `fail`, `handle`, …)
+            - File icons for dark and light themes
+
+            ### Install
+            Download `${{ needs.build.outputs.vsix }}` then run:
+            ```
+            code --install-extension ${{ needs.build.outputs.vsix }}
+            ```
+            or drag-and-drop the file into the VSCode Extensions panel.
+          files: ${{ needs.build.outputs.vsix }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+  # ── VS Code Marketplace publish ──────────────────────────────────────────
+  publish:
+    needs: [build]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: vscode-fly-vsix
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Publish to VS Code Marketplace
+        run: npx vsce publish --packagePath ${{ needs.build.outputs.vsix }}
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}

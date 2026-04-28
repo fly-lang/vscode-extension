@@ -1,0 +1,291 @@
+(* =========================================================================
+   Fly Language Grammar — ISO 14977 EBNF
+   https://flylang.org
+   ========================================================================= *)
+
+compilation_unit = [ namespace_decl ]
+                 , { import_decl }
+                 , { top_decl } ;
+
+(* ── Namespace / Import ─────────────────────────────────────────────────── *)
+
+namespace_decl = "namespace" , qualified_name ;
+
+import_decl = "import" , qualified_name , "as" , identifier
+            | "import" , qualified_name , "." , "*"
+            | "import" , qualified_name ;
+
+(* ── Top-level declarations ─────────────────────────────────────────────── *)
+
+top_decl = function_decl
+         | class_decl
+         | struct_decl
+         | interface_decl
+         | enum_decl ;
+
+(* ── Modifiers ──────────────────────────────────────────────────────────── *)
+
+modifier = "public" | "private" | "protected"
+         | "const"  | "static"
+         | "abstract" | "final" ;
+
+modifier_list = modifier , { modifier } ;
+
+(* ── Types ──────────────────────────────────────────────────────────────── *)
+
+builtin_type = "bool"   | "byte"  | "char"
+             | "short"  | "ushort"
+             | "int"    | "uint"
+             | "long"   | "ulong"
+             | "float"  | "double"
+             | "string" | "void"  | "error" ;
+
+type_ref = builtin_type
+         | array_type
+         | qualified_name ;
+
+array_type = ( builtin_type | qualified_name ) , "[" , [ expr ] , "]" ;
+
+qualified_name = identifier , { "." , identifier } ;
+
+(* ── Function declaration ───────────────────────────────────────────────── *)
+
+function_decl = [ modifier_list ]
+              , identifier
+              , "(" , [ param_list ] , ")"
+              , block ;
+
+param_list = param , { "," , param } ;
+
+param = [ modifier_list ]
+      , type_ref
+      , identifier
+      , [ "=" , expr ] ;
+
+(* ── Class / Struct / Interface ─────────────────────────────────────────── *)
+
+class_decl = [ modifier_list ] , "class" , identifier
+           , [ ":" , base_list ]
+           , "{" , { class_member } , "}" ;
+
+struct_decl = [ modifier_list ] , "struct" , identifier
+            , [ ":" , base_list ]
+            , "{" , { class_member } , "}" ;
+
+interface_decl = [ modifier_list ] , "interface" , identifier
+               , [ ":" , base_list ]
+               , "{" , { class_member } , "}" ;
+
+base_list = qualified_name , { "," , qualified_name } ;
+
+class_member = field_decl | method_decl ;
+
+field_decl = [ modifier_list ]
+           , type_ref
+           , identifier
+           , [ "=" , expr ] ;
+
+method_decl = [ modifier_list ]
+            , identifier
+            , "(" , [ param_list ] , ")"
+            , block ;
+
+(* ── Enum ───────────────────────────────────────────────────────────────── *)
+
+enum_decl = [ modifier_list ] , "enum" , identifier
+          , [ ":" , type_ref ]
+          , "{" , enum_body , "}" ;
+
+enum_body = enum_entry , { ( "," | newline ) , enum_entry } , [ "," ] ;
+
+enum_entry = [ modifier_list ] , identifier ;
+
+(* ── Block ──────────────────────────────────────────────────────────────── *)
+
+block = "{" , { stmt } , "}" ;
+
+(* ── Statements ─────────────────────────────────────────────────────────── *)
+
+stmt = var_decl_stmt
+     | assign_stmt
+     | if_stmt
+     | switch_stmt
+     | for_stmt
+     | for_in_stmt
+     | while_stmt
+     | return_stmt
+     | break_stmt
+     | continue_stmt
+     | fail_stmt
+     | handle_stmt
+     | expr_stmt ;
+
+var_decl_stmt = [ modifier_list ] , type_ref , identifier , [ "=" , expr ] ;
+
+assign_stmt = lvalue , assign_op , expr ;
+
+assign_op = "=" | "+=" | "-=" | "*=" | "/=" | "%="
+          | "&=" | "|=" | "^=" | "<<=" | ">>=" ;
+
+lvalue = identifier , { ( "." , identifier | "[" , expr , "]" ) } ;
+
+(* ── Conditional ────────────────────────────────────────────────────────── *)
+
+if_stmt = "if" , condition , ( block | stmt )
+        , { elsif_clause }
+        , [ else_clause ] ;
+
+elsif_clause = "elsif" , condition , ( block | stmt ) ;
+
+else_clause = "else" , ( block | stmt ) ;
+
+condition = expr | "(" , expr , ")" ;
+
+(* ── Switch ─────────────────────────────────────────────────────────────── *)
+
+switch_stmt = "switch" , "(" , expr , ")"
+            , "{" , { case_clause } , [ default_clause ] , "}" ;
+
+case_clause    = "case"    , expr , ( ":" , { stmt } | block ) ;
+default_clause = "default" ,       ( ":" , { stmt } | block ) ;
+
+(* ── Loops ──────────────────────────────────────────────────────────────── *)
+
+for_stmt = "for" , [ "(" ]
+         , [ for_init ] , ";" , [ expr ] , ";" , [ for_post ]
+         , [ ")" ] , block ;
+
+for_init      = var_decl_stmt | assign_stmt | expr ;
+for_post      = for_post_item , { "," , for_post_item } ;
+for_post_item = assign_stmt | expr ;
+
+for_in_stmt = "for" , [ "(" ]
+            , identifier , "in" , expr
+            , [ ")" ] , block ;
+
+while_stmt = "while" , condition , block ;
+
+(* ── Jump statements ────────────────────────────────────────────────────── *)
+
+return_stmt   = "return" , [ expr ] ;
+break_stmt    = "break" ;
+continue_stmt = "continue" ;
+
+(* ── Error handling ─────────────────────────────────────────────────────── *)
+
+fail_stmt   = "fail" , [ expr , [ "," , expr , [ "," , expr ] ] ] ;
+handle_stmt = "handle" , block ;
+
+expr_stmt = expr ;
+
+(* ── Expressions (precedence low → high) ───────────────────────────────── *)
+
+expr = assignment_expr
+     | ternary_expr
+     | binary_expr
+     | unary_expr
+     | cast_expr
+     | new_expr
+     | postfix_expr
+     | primary ;
+
+assignment_expr = lvalue , assign_op , expr ;           (* right-assoc *)
+
+ternary_expr = expr , "?" , expr , ":" , expr ;         (* right-assoc *)
+
+binary_expr = expr , binary_op , expr ;
+
+binary_op = "||" | "&&"
+           | "|"  | "^"  | "&"
+           | "==" | "!="
+           | "<"  | "<=" | ">"  | ">="
+           | "<<" | ">>"
+           | "+"  | "-"
+           | "*"  | "/"  | "%" ;
+
+unary_expr = ( "!" | "++" | "--" ) , expr ;
+
+cast_expr = "(" , type_ref , ")" , expr ;
+
+new_expr = "new"
+         , [ "<" , smart_ptr_kind , ">" ]
+         , qualified_name
+         , "(" , [ arg_list ] , ")" ;
+
+smart_ptr_kind = "unique" | "shared" | "weak" ;
+
+postfix_expr = expr , "++"
+             | expr , "--"
+             | expr , "(" , [ arg_list ] , ")"
+             | expr , "[" , expr , "]"
+             | expr , "." , identifier ;
+
+arg_list = expr , { "," , expr } ;
+
+primary = identifier
+        | qualified_name
+        | literal
+        | array_literal
+        | struct_literal
+        | "(" , expr , ")" ;
+
+(* ── Literals ───────────────────────────────────────────────────────────── *)
+
+literal = integer_literal
+        | float_literal
+        | string_literal
+        | char_literal
+        | bool_literal
+        | null_literal
+        | unset_literal ;
+
+integer_literal = decimal_literal | hex_literal ;
+decimal_literal = digit , { digit } ;
+hex_literal     = ( "0x" | "0X" ) , hex_digit , { hex_digit } ;
+
+float_literal = digit , { digit } , "." , { digit } ;
+
+string_literal = '"' , { string_char | escape_seq } , '"' ;
+char_literal   = "'" , ( char_char  | escape_seq ) , "'" ;
+
+escape_seq = "\" ,
+           ( "n" | "r" | "t" | "\" | "'" | '"' | "0"
+           | "x" , hex_digit , hex_digit
+           | "u" , hex_digit , hex_digit , hex_digit , hex_digit ) ;
+
+bool_literal  = "true" | "false" ;
+null_literal  = "null" ;
+unset_literal = "unset" ;
+
+array_literal  = "{" , [ expr , { "," , expr } , [ "," ] ] , "}" ;
+struct_literal = "{" , struct_field , { "," , struct_field } , [ "," ] , "}" ;
+struct_field   = identifier , "=" , expr ;
+
+(* ── Annotation ─────────────────────────────────────────────────────────── *)
+
+annotation = "@" , identifier ;
+
+(* ── Comments ───────────────────────────────────────────────────────────── *)
+
+line_comment  = "//" , { any_char - newline } , newline ;
+block_comment = "/*" , { any_char } , "*/" ;
+
+(* ── Terminals ──────────────────────────────────────────────────────────── *)
+
+identifier = ( letter | "_" ) , { letter | digit | "_" } ;
+
+letter    = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J"
+          | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T"
+          | "U" | "V" | "W" | "X" | "Y" | "Z"
+          | "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j"
+          | "k" | "l" | "m" | "n" | "o" | "p" | "q" | "r" | "s" | "t"
+          | "u" | "v" | "w" | "x" | "y" | "z" ;
+
+digit     = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
+
+hex_digit = digit
+          | "A" | "B" | "C" | "D" | "E" | "F"
+          | "a" | "b" | "c" | "d" | "e" | "f" ;
+
+newline   = ? U+000A ? ;
+any_char  = ? any Unicode character ? ;

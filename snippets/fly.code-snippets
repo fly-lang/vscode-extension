@@ -1,0 +1,226 @@
+{
+  "Namespace": {
+    "prefix": "ns",
+    "body": ["namespace ${1:com.example};", ""],
+    "description": "Namespace declaration"
+  },
+
+  "Import": {
+    "prefix": "import",
+    "body": ["import ${1:fly.io};"],
+    "description": "Import declaration"
+  },
+
+  "Import as": {
+    "prefix": "importas",
+    "body": ["import ${1:fly.io} as ${2:io};"],
+    "description": "Import with alias"
+  },
+
+  "Function": {
+    "prefix": "fn",
+    "body": [
+      "${1:void} ${2:name}(${3}) {",
+      "\t$0",
+      "}"
+    ],
+    "description": "Function declaration"
+  },
+
+  "Public function": {
+    "prefix": "pfn",
+    "body": [
+      "public ${1:void} ${2:name}(${3}) {",
+      "\t$0",
+      "}"
+    ],
+    "description": "Public function declaration"
+  },
+
+  "Class": {
+    "prefix": "class",
+    "body": [
+      "public class ${1:Name} {",
+      "\t$0",
+      "}"
+    ],
+    "description": "Class declaration"
+  },
+
+  "Class with base": {
+    "prefix": "classx",
+    "body": [
+      "public class ${1:Name} : ${2:Base} {",
+      "\t$0",
+      "}"
+    ],
+    "description": "Class declaration with base class"
+  },
+
+  "Struct": {
+    "prefix": "struct",
+    "body": [
+      "public struct ${1:Name} {",
+      "\t$0",
+      "}"
+    ],
+    "description": "Struct declaration"
+  },
+
+  "Interface": {
+    "prefix": "iface",
+    "body": [
+      "public interface ${1:Name} {",
+      "\t$0",
+      "}"
+    ],
+    "description": "Interface declaration"
+  },
+
+  "Enum": {
+    "prefix": "enum",
+    "body": [
+      "public enum ${1:Name} {",
+      "\t${2:Value1},",
+      "\t${3:Value2}",
+      "}"
+    ],
+    "description": "Enum declaration"
+  },
+
+  "If": {
+    "prefix": "if",
+    "body": [
+      "if ${1:condition} {",
+      "\t$0",
+      "}"
+    ],
+    "description": "If statement"
+  },
+
+  "If / else": {
+    "prefix": "ife",
+    "body": [
+      "if ${1:condition} {",
+      "\t$0",
+      "} else {",
+      "\t",
+      "}"
+    ],
+    "description": "If / else statement"
+  },
+
+  "If / elsif / else": {
+    "prefix": "ifee",
+    "body": [
+      "if ${1:condition} {",
+      "\t$0",
+      "} elsif ${2:condition} {",
+      "\t",
+      "} else {",
+      "\t",
+      "}"
+    ],
+    "description": "If / elsif / else statement"
+  },
+
+  "Switch": {
+    "prefix": "switch",
+    "body": [
+      "switch (${1:expr}) {",
+      "\tcase ${2:value}:",
+      "\t\t$0",
+      "\t\tbreak;",
+      "\tdefault:",
+      "\t\tbreak;",
+      "}"
+    ],
+    "description": "Switch statement"
+  },
+
+  "For": {
+    "prefix": "for",
+    "body": [
+      "for int ${1:i} = 0; ${1:i} < ${2:n}; ${1:i}++ {",
+      "\t$0",
+      "}"
+    ],
+    "description": "For loop"
+  },
+
+  "For-in": {
+    "prefix": "forin",
+    "body": [
+      "for ${1:item} in ${2:collection} {",
+      "\t$0",
+      "}"
+    ],
+    "description": "For-in loop"
+  },
+
+  "While": {
+    "prefix": "while",
+    "body": [
+      "while ${1:condition} {",
+      "\t$0",
+      "}"
+    ],
+    "description": "While loop"
+  },
+
+  "New": {
+    "prefix": "new",
+    "body": ["new ${1:Type}($2)"],
+    "description": "Object creation"
+  },
+
+  "New unique": {
+    "prefix": "newu",
+    "body": ["new<unique> ${1:Type}($2)"],
+    "description": "Unique smart pointer creation"
+  },
+
+  "New shared": {
+    "prefix": "news",
+    "body": ["new<shared> ${1:Type}($2)"],
+    "description": "Shared smart pointer creation"
+  },
+
+  "Return": {
+    "prefix": "ret",
+    "body": ["return $0;"],
+    "description": "Return statement"
+  },
+
+  "Fail": {
+    "prefix": "fail",
+    "body": ["fail ${1:error};"],
+    "description": "Fail (throw error) statement"
+  },
+
+  "Handle": {
+    "prefix": "handle",
+    "body": [
+      "handle {",
+      "\t$0",
+      "}"
+    ],
+    "description": "Handle block"
+  },
+
+  "Line comment": {
+    "prefix": "//",
+    "body": ["// $0"],
+    "description": "Line comment"
+  },
+
+  "Block comment": {
+    "prefix": "/**",
+    "body": [
+      "/**",
+      " * $0",
+      " */"
+    ],
+    "description": "Block doc comment"
+  }
+}

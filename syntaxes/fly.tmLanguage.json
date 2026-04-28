@@ -1,0 +1,201 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Fly",
+  "scopeName": "source.fly",
+  "fileTypes": ["fly", "f"],
+  "patterns": [
+    { "include": "#comments" },
+    { "include": "#strings" },
+    { "include": "#chars" },
+    { "include": "#annotations" },
+    { "include": "#type-declarations" },
+    { "include": "#keywords-control" },
+    { "include": "#keywords-other" },
+    { "include": "#modifiers" },
+    { "include": "#builtin-types" },
+    { "include": "#constants" },
+    { "include": "#numbers" },
+    { "include": "#function-calls" },
+    { "include": "#function-declarations" },
+    { "include": "#operators" },
+    { "include": "#punctuation" }
+  ],
+  "repository": {
+
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.block.fly",
+          "begin": "/\\*",
+          "end": "\\*/",
+          "beginCaptures": { "0": { "name": "punctuation.definition.comment.begin.fly" } },
+          "endCaptures":   { "0": { "name": "punctuation.definition.comment.end.fly" } }
+        },
+        {
+          "name": "comment.line.double-slash.fly",
+          "begin": "//",
+          "end": "$",
+          "beginCaptures": { "0": { "name": "punctuation.definition.comment.fly" } }
+        }
+      ]
+    },
+
+    "strings": {
+      "name": "string.quoted.double.fly",
+      "begin": "\"",
+      "end": "\"",
+      "beginCaptures": { "0": { "name": "punctuation.definition.string.begin.fly" } },
+      "endCaptures":   { "0": { "name": "punctuation.definition.string.end.fly" } },
+      "patterns": [
+        { "include": "#escape-sequences" },
+        { "name": "invalid.illegal.fly", "match": "\\\\." }
+      ]
+    },
+
+    "chars": {
+      "name": "string.quoted.single.fly",
+      "begin": "'",
+      "end": "'",
+      "beginCaptures": { "0": { "name": "punctuation.definition.string.begin.fly" } },
+      "endCaptures":   { "0": { "name": "punctuation.definition.string.end.fly" } },
+      "patterns": [
+        { "include": "#escape-sequences" }
+      ]
+    },
+
+    "escape-sequences": {
+      "name": "constant.character.escape.fly",
+      "match": "\\\\([nrt\\\\'\"0]|x[0-9a-fA-F]{2}|u[0-9a-fA-F]{4})"
+    },
+
+    "annotations": {
+      "name": "meta.annotation.fly",
+      "match": "(@)([a-zA-Z_][a-zA-Z0-9_]*)",
+      "captures": {
+        "1": { "name": "punctuation.definition.annotation.fly" },
+        "2": { "name": "entity.name.type.annotation.fly" }
+      }
+    },
+
+    "type-declarations": {
+      "patterns": [
+        {
+          "comment": "class / struct / interface / enum Name",
+          "match": "\\b(class|struct|interface|enum)\\s+([a-zA-Z_][a-zA-Z0-9_]*)",
+          "captures": {
+            "1": { "name": "storage.type.fly" },
+            "2": { "name": "entity.name.type.fly" }
+          }
+        }
+      ]
+    },
+
+    "keywords-control": {
+      "name": "keyword.control.fly",
+      "match": "\\b(if|elsif|else|switch|case|default|for|in|while|return|break|continue|fail|handle)\\b"
+    },
+
+    "keywords-other": {
+      "name": "keyword.other.fly",
+      "match": "\\b(namespace|import|as|new|unique|shared|weak)\\b"
+    },
+
+    "modifiers": {
+      "name": "storage.modifier.fly",
+      "match": "\\b(public|private|protected|const|static|abstract|final)\\b"
+    },
+
+    "builtin-types": {
+      "name": "support.type.fly",
+      "match": "\\b(bool|byte|char|short|ushort|int|uint|long|ulong|float|double|string|void|error)\\b"
+    },
+
+    "constants": {
+      "patterns": [
+        {
+          "name": "constant.language.boolean.fly",
+          "match": "\\b(true|false)\\b"
+        },
+        {
+          "name": "constant.language.null.fly",
+          "match": "\\b(null|unset)\\b"
+        }
+      ]
+    },
+
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.hex.fly",
+          "match": "\\b0[xX][0-9a-fA-F]+\\b"
+        },
+        {
+          "name": "constant.numeric.float.fly",
+          "match": "\\b[0-9]+\\.[0-9]*\\b"
+        },
+        {
+          "name": "constant.numeric.integer.fly",
+          "match": "\\b[0-9]+\\b"
+        }
+      ]
+    },
+
+    "function-declarations": {
+      "comment": "identifier followed by '(' that is NOT a call — used to highlight declared names",
+      "match": "(?<![.])\\b([a-zA-Z_][a-zA-Z0-9_]*)\\s*(?=\\()",
+      "captures": {
+        "1": { "name": "entity.name.function.fly" }
+      }
+    },
+
+    "function-calls": {
+      "comment": "member.method() — highlight the method name only",
+      "match": "(?<=\\.)([a-zA-Z_][a-zA-Z0-9_]*)\\s*(?=\\()",
+      "captures": {
+        "1": { "name": "entity.name.function.member.fly" }
+      }
+    },
+
+    "operators": {
+      "patterns": [
+        {
+          "name": "keyword.operator.assignment.fly",
+          "match": "(?<!=)(=|\\+=|-=|\\*=|/=|%=|&=|\\|=|\\^=|<<=|>>=)(?!=)"
+        },
+        {
+          "name": "keyword.operator.comparison.fly",
+          "match": "(==|!=|<=|>=|<|>)"
+        },
+        {
+          "name": "keyword.operator.logical.fly",
+          "match": "(&&|\\|\\||!)"
+        },
+        {
+          "name": "keyword.operator.bitwise.fly",
+          "match": "(&|\\||\\^|~|<<|>>)"
+        },
+        {
+          "name": "keyword.operator.arithmetic.fly",
+          "match": "(\\+\\+|--|\\+|-|\\*|/|%)"
+        },
+        {
+          "name": "keyword.operator.ternary.fly",
+          "match": "[?:]"
+        }
+      ]
+    },
+
+    "punctuation": {
+      "patterns": [
+        {
+          "name": "punctuation.brackets.fly",
+          "match": "[()\\[\\]{}]"
+        },
+        {
+          "name": "punctuation.separator.fly",
+          "match": "[.,;]"
+        }
+      ]
+    }
+  }
+}
