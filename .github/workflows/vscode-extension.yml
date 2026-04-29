@@ -7,9 +7,6 @@ on:
       - "v*"
   workflow_dispatch:
 
-env:
-  EXTENSION_DIR: .
-
 jobs:
 
   # ── Build & package ──────────────────────────────────────────────────────
@@ -27,32 +24,28 @@ jobs:
         with:
           node-version: "20"
           cache: "npm"
-          cache-dependency-path: ${{ env.EXTENSION_DIR }}/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: Install dependencies
-        working-directory: ${{ env.EXTENSION_DIR }}
         run: npm ci
 
       - name: Compile TypeScript
-        working-directory: ${{ env.EXTENSION_DIR }}
         run: npm run compile
 
       - name: Read extension metadata
         id: meta
-        working-directory: ${{ env.EXTENSION_DIR }}
         run: |
           VERSION=$(node -p "require('./package.json').version")
           echo "version=${VERSION}"               >> $GITHUB_OUTPUT
           echo "vsix=vscode-fly-${VERSION}.vsix"  >> $GITHUB_OUTPUT
 
       - name: Package (.vsix)
-        working-directory: ${{ env.EXTENSION_DIR }}
         run: npx vsce package --out vscode-fly-${{ steps.meta.outputs.version }}.vsix
 
       - uses: actions/upload-artifact@v4
         with:
           name: vscode-fly-vsix
-          path: ${{ env.EXTENSION_DIR }}/${{ steps.meta.outputs.vsix }}
+          path: ${{ steps.meta.outputs.vsix }}
           if-no-files-found: error
 
   # ── GitHub Release ───────────────────────────────────────────────────────
