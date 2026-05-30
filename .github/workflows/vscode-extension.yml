@@ -1,8 +1,6 @@
 name: VSCode Extension
 
 on:
-  push:
-    branches: [main]
 
   # Release is ONLY triggered manually from the Actions tab.
   # It reads the version from package.json, creates the tag, and publishes.
@@ -59,7 +57,7 @@ jobs:
   # Fails immediately if the tag for the current version already exists.
   release:
     needs: [build]
-    if: github.event_name == 'workflow_dispatch'
+    if: github.ref_name == 'main'
     runs-on: ubuntu-latest
     permissions:
       contents: write   # needed to create tag and GitHub Release
