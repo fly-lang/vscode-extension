@@ -1,0 +1,12 @@
+# Node
+node_modules/
+
+# TypeScript build output
+out/
+
+# Packaged extension
+*.vsix
+
+# IDE
+.idea/
+.vscode/

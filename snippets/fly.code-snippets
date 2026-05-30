@@ -1,40 +1,92 @@
 {
   "Namespace": {
     "prefix": "ns",
-    "body": ["namespace ${1:com.example};", ""],
+    "body": ["namespace ${1:com.example}", ""],
     "description": "Namespace declaration"
   },
 
-  "Import": {
+  "Import namespace": {
     "prefix": "import",
-    "body": ["import ${1:fly.io};"],
-    "description": "Import declaration"
+    "body": ["import ${1:fly.str}"],
+    "description": "Namespace import — access symbols with prefix: str.len()"
   },
 
-  "Import as": {
+  "Import class (Java style)": {
+    "prefix": "importc",
+    "body": ["import ${1:fly.data.List}"],
+    "description": "Java-style class import — brings the type directly into scope: List l = new List()"
+  },
+
+  "Import wildcard": {
+    "prefix": "importw",
+    "body": ["import ${1:fly.data}.*"],
+    "description": "Wildcard import — brings all public symbols from namespace into scope"
+  },
+
+  "Import with alias": {
     "prefix": "importas",
-    "body": ["import ${1:fly.io} as ${2:io};"],
+    "body": ["import ${1:fly.str} as ${2:s}"],
     "description": "Import with alias"
   },
 
-  "Function": {
-    "prefix": "fn",
+  "Main function": {
+    "prefix": "main",
     "body": [
-      "${1:void} ${2:name}(${3}) {",
+      "void main() {",
       "\t$0",
       "}"
     ],
-    "description": "Function declaration"
+    "description": "Main entry point"
   },
 
-  "Public function": {
-    "prefix": "pfn",
+  "Function (void)": {
+    "prefix": "fn",
     "body": [
-      "public ${1:void} ${2:name}(${3}) {",
+      "${1:name}(${2}) {",
       "\t$0",
       "}"
     ],
-    "description": "Public function declaration"
+    "description": "Void function declaration"
+  },
+
+  "Public function (void)": {
+    "prefix": "pfn",
+    "body": [
+      "public ${1:name}(${2}) {",
+      "\t$0",
+      "}"
+    ],
+    "description": "Public void function declaration"
+  },
+
+  "Function with return type": {
+    "prefix": "fnr",
+    "body": [
+      "${1:int} ${2:name}(${3}) {",
+      "\tout = $0",
+      "}"
+    ],
+    "description": "Function with return type — assign to 'out' to return a value"
+  },
+
+  "Public function with return type": {
+    "prefix": "pfnr",
+    "body": [
+      "public ${1:int} ${2:name}(${3}) {",
+      "\tout = $0",
+      "}"
+    ],
+    "description": "Public function with return type — assign to 'out' to return a value"
+  },
+
+  "Generic function": {
+    "prefix": "fng",
+    "body": [
+      "${1:T} ${2:name}<${1:T}>(const ${1:T} ${3:v}) {",
+      "\tout = $0",
+      "}"
+    ],
+    "description": "Generic function — type parameter T, inferred at call site"
   },
 
   "Class": {
@@ -54,7 +106,17 @@
       "\t$0",
       "}"
     ],
-    "description": "Class declaration with base class"
+    "description": "Class declaration with base class or interface"
+  },
+
+  "Generic class": {
+    "prefix": "classg",
+    "body": [
+      "public class ${1:Name}<${2:T}> {",
+      "\t$0",
+      "}"
+    ],
+    "description": "Generic class declaration — instantiated as Name<int>, Name<string>, etc."
   },
 
   "Struct": {
@@ -64,7 +126,7 @@
       "\t$0",
       "}"
     ],
-    "description": "Struct declaration"
+    "description": "Struct declaration (stack-allocated by default)"
   },
 
   "Interface": {
@@ -81,8 +143,8 @@
     "prefix": "enum",
     "body": [
       "public enum ${1:Name} {",
-      "\t${2:Value1},",
-      "\t${3:Value2}",
+      "\t${2:VALUE1},",
+      "\t${3:VALUE2}",
       "}"
     ],
     "description": "Enum declaration"
@@ -130,9 +192,9 @@
       "switch (${1:expr}) {",
       "\tcase ${2:value}:",
       "\t\t$0",
-      "\t\tbreak;",
+      "\t\tbreak",
       "\tdefault:",
-      "\t\tbreak;",
+      "\t\tbreak",
       "}"
     ],
     "description": "Switch statement"
@@ -148,16 +210,6 @@
     "description": "For loop"
   },
 
-  "For-in": {
-    "prefix": "forin",
-    "body": [
-      "for ${1:item} in ${2:collection} {",
-      "\t$0",
-      "}"
-    ],
-    "description": "For-in loop"
-  },
-
   "While": {
     "prefix": "while",
     "body": [
@@ -168,44 +220,87 @@
     "description": "While loop"
   },
 
-  "New": {
+  "New (heap class)": {
     "prefix": "new",
-    "body": ["new ${1:Type}($2)"],
-    "description": "Object creation"
+    "body": ["${1:Type} ${2:obj} = new ${1:Type}($3)"],
+    "description": "Heap-allocated class instance — call 'delete obj' when done"
   },
 
   "New unique": {
     "prefix": "newu",
-    "body": ["new<unique> ${1:Type}($2)"],
-    "description": "Unique smart pointer creation"
+    "body": ["${1:Type} ${2:obj} = new unique ${1:Type}($3)"],
+    "description": "Unique smart pointer — freed automatically at scope exit, not copyable"
   },
 
   "New shared": {
     "prefix": "news",
-    "body": ["new<shared> ${1:Type}($2)"],
-    "description": "Shared smart pointer creation"
+    "body": ["${1:Type} ${2:obj} = new shared ${1:Type}($3)"],
+    "description": "Shared smart pointer — reference-counted, freed when last reference exits scope"
   },
 
-  "Return": {
+  "New weak": {
+    "prefix": "neww",
+    "body": ["${1:Type} ${2:obj} = new weak ${1:Type}($3)"],
+    "description": "Weak smart pointer — no refcount, first scope exit frees; use carefully"
+  },
+
+  "Delete": {
+    "prefix": "del",
+    "body": ["delete ${1:obj}"],
+    "description": "Free a heap-allocated class instance (created with plain 'new')"
+  },
+
+  "Out (return value)": {
+    "prefix": "out",
+    "body": ["out = $0"],
+    "description": "Assign return value — 'out' is the implicit return holder in functions with a return type"
+  },
+
+  "Out indexed (multi-return)": {
+    "prefix": "outi",
+    "body": ["out[${1:0}] = $0"],
+    "description": "Assign indexed return value for multi-return functions: int,int func()"
+  },
+
+  "Return (early exit)": {
     "prefix": "ret",
-    "body": ["return $0;"],
-    "description": "Return statement"
+    "body": ["return"],
+    "description": "Exit a void function early (no value — use 'out =' to return a value)"
   },
 
   "Fail": {
     "prefix": "fail",
-    "body": ["fail ${1:error};"],
-    "description": "Fail (throw error) statement"
+    "body": ["fail ${1:\"error message\"}"],
+    "description": "Signal an error — accepts int code, string message, and/or object (comma-separated)"
   },
 
-  "Handle": {
+  "Handle block": {
     "prefix": "handle",
     "body": [
       "handle {",
       "\t$0",
       "}"
     ],
-    "description": "Handle block"
+    "description": "Handle block — errors are silently swallowed"
+  },
+
+  "Handle with error capture": {
+    "prefix": "errhandle",
+    "body": [
+      "error ${1:err} handle {",
+      "\t$0",
+      "}",
+      "if (${1:err}) {",
+      "\t",
+      "}"
+    ],
+    "description": "Handle block with named error variable — check 'err' after the block"
+  },
+
+  "Handle single statement": {
+    "prefix": "errh",
+    "body": ["error ${1:err} handle ${2:operation()}"],
+    "description": "Handle a single call with error capture"
   },
 
   "Line comment": {
@@ -214,7 +309,7 @@
     "description": "Line comment"
   },
 
-  "Block comment": {
+  "Block doc comment": {
     "prefix": "/**",
     "body": [
       "/**",

@@ -1,0 +1,23 @@
+# TypeScript source — compiled to out/
+src/
+tsconfig.json
+
+# Build artefacts that don't belong in the package
+out/**/*.js.map
+*.vsix
+
+# Node / npm
+node_modules/
+package-lock.json
+
+# Version control
+.git/
+.gitignore
+.github/
+
+# IDE project files
+.idea/
+.vscode/
+
+# Grammar specification (developer reference, not used by the runtime extension)
+fly.ebnf

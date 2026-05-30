@@ -16,37 +16,7 @@ Full language support for the [Fly programming language](https://flylang.org) in
 - **File icons** for dark and light themes
 - **Auto-closing** brackets and parentheses
 - **Block folding** and block comment support
-- **25 built-in snippets** covering declarations, control flow, memory management, and error handling
-
-## Snippets
-
-| Prefix    | Description                        |
-|-----------|------------------------------------|
-| `ns`      | Namespace declaration              |
-| `import`  | Import declaration                 |
-| `importas`| Import with alias                  |
-| `fn`      | Function declaration               |
-| `pfn`     | Public function declaration        |
-| `class`   | Class declaration                  |
-| `classx`  | Class with base class              |
-| `struct`  | Struct declaration                 |
-| `iface`   | Interface declaration              |
-| `enum`    | Enum declaration                   |
-| `if`      | If statement                       |
-| `ife`     | If / else statement                |
-| `ifee`    | If / elsif / else statement        |
-| `switch`  | Switch statement                   |
-| `for`     | For loop                           |
-| `forin`   | For-in loop                        |
-| `while`   | While loop                         |
-| `new`     | Object creation                    |
-| `newu`    | Unique smart pointer creation      |
-| `news`    | Shared smart pointer creation      |
-| `ret`     | Return statement                   |
-| `fail`    | Fail (throw error) statement       |
-| `handle`  | Handle block                       |
-| `//`      | Line comment                       |
-| `/**`     | Block doc comment                  |
+- **built-in snippets** covering declarations, control flow, memory management, and error handling
 
 ## Requirements
 
@@ -77,6 +47,49 @@ npm ci
 npm run compile
 npm run package        # produces vscode-fly-<version>.vsix
 ```
+
+## GitHub Actions — CI/CD setup
+
+The workflow (`.github/workflows/vscode-extension.yml`) runs automatically:
+
+| Trigger | Jobs executed |
+|---------|--------------|
+| Push to `main` | `build` — compiles and packages the `.vsix`, uploads it as a workflow artefact |
+| Push of a `v*` tag | `build` + `release` (GitHub Release) + `publish` (VS Code Marketplace) |
+
+### Secrets to configure
+
+Go to **GitHub → repository → Settings → Secrets and variables → Actions → New repository secret**.
+
+#### `VSCE_PAT` — VS Code Marketplace Personal Access Token
+
+Required by the `publish` job. Without it the tag pipeline will fail at the Marketplace step.
+
+How to create it:
+
+1. Sign in to [dev.azure.com](https://dev.azure.com) with the Microsoft account linked to your [VS Code Marketplace publisher](https://marketplace.visualstudio.com/manage).
+2. Click your avatar (top-right) → **Personal access tokens → New Token**.
+3. Set:
+   - **Name**: e.g. `VSCE_PAT`
+   - **Organization**: `All accessible organizations`
+   - **Expiration**: choose a suitable duration (max 1 year)
+   - **Scopes**: select **Custom defined** → under *Marketplace* check **Manage**
+4. Click **Create** and copy the token immediately (shown only once).
+5. Add it to GitHub as a secret named exactly **`VSCE_PAT`**.
+
+#### `GITHUB_TOKEN`
+
+Used by the `release` job to create GitHub Releases and attach the `.vsix`. This token is **provided automatically** by GitHub Actions — nothing to configure.
+
+### Publishing a new release
+
+```bash
+# bump version in package.json, commit, then:
+git tag v0.2.0
+git push origin v0.2.0
+```
+
+The tag push triggers the full pipeline: build → GitHub Release → Marketplace publish.
 
 ## Links
 

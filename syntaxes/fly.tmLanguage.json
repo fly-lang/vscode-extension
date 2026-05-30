@@ -9,8 +9,10 @@
     { "include": "#chars" },
     { "include": "#annotations" },
     { "include": "#type-declarations" },
+    { "include": "#generic-type-params" },
     { "include": "#keywords-control" },
     { "include": "#keywords-other" },
+    { "include": "#out-keyword" },
     { "include": "#modifiers" },
     { "include": "#builtin-types" },
     { "include": "#constants" },
@@ -97,7 +99,22 @@
 
     "keywords-other": {
       "name": "keyword.other.fly",
-      "match": "\\b(namespace|import|as|new|unique|shared|weak)\\b"
+      "match": "\\b(namespace|import|as|new|delete|unique|shared|weak)\\b"
+    },
+
+    "out-keyword": {
+      "comment": "'out' is the implicit return-value holder, declared in any function that has a return type",
+      "name": "variable.language.fly",
+      "match": "\\bout\\b"
+    },
+
+    "generic-type-params": {
+      "comment": "Generic type parameters in declarations: class Wrapper<T>, List<string>, Map<K,V>",
+      "match": "\\b([a-zA-Z_][a-zA-Z0-9_]*)\\s*(<[^>{}()]+>)",
+      "captures": {
+        "1": { "name": "entity.name.type.fly" },
+        "2": { "name": "storage.type.fly" }
+      }
     },
 
     "modifiers": {

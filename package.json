@@ -3,7 +3,7 @@
   "displayName": "Fly Language Support",
   "description": "Support for the Fly programming language in Visual Studio Code, including syntax highlighting and code snippets.",
   "version": "0.1.0",
-  "publisher": "flylang.org",
+  "publisher": "fly-lang",
   "icon": "fly_logo.png",
   "license": "Apache-2.0",
   "homepage": "https://flylang.org",

@@ -11,7 +11,13 @@ compilation_unit = [ namespace_decl ]
 
 namespace_decl = "namespace" , qualified_name ;
 
-import_decl = "import" , qualified_name , "as" , identifier
+(* Four import forms (Java-style):
+     import fly.str             -- namespace import; access as str.len()
+     import fly.data.List       -- class import; 'List' is directly in scope
+     import fly.data.*          -- wildcard; all symbols from namespace in scope
+     import fly.str as s        -- alias; access as s.len()
+   Wildcard cannot be combined with alias. *)
+import_decl = "import" , qualified_name , "as" , qualified_name
             | "import" , qualified_name , "." , "*"
             | "import" , qualified_name ;
 
@@ -26,8 +32,7 @@ top_decl = function_decl
 (* ── Modifiers ──────────────────────────────────────────────────────────── *)
 
 modifier = "public" | "private" | "protected"
-         | "const"  | "static"
-         | "abstract" | "final" ;
+         | "const"  | "static" ;
 
 modifier_list = modifier , { modifier } ;
 
@@ -42,63 +47,99 @@ builtin_type = "bool"   | "byte"  | "char"
 
 type_ref = builtin_type
          | array_type
+         | generic_type
          | qualified_name ;
 
-array_type = ( builtin_type | qualified_name ) , "[" , [ expr ] , "]" ;
+array_type = ( builtin_type | generic_type | qualified_name ) , "[" , [ expr ] , "]" ;
+
+(* Generic instantiation: List<int>, Wrapper<string>, Map<string,int> *)
+generic_type    = qualified_name , "<" , type_arg_list , ">" ;
+type_arg_list   = type_ref , { "," , type_ref } ;
 
 qualified_name = identifier , { "." , identifier } ;
 
+(* ── Return type & type parameters (generics) ──────────────────────────── *)
+
+(* A function with a return type implicitly declares 'out' inside its body.
+     Single return:    out = expr
+     Multi-return:     out[0] = expr , out[1] = expr , ...
+   'out' is a reserved identifier; it may NOT be used as a variable name. *)
+
+return_type     = type_ref , { "," , type_ref } ;     (* comma-separated for multi-return *)
+
+type_param_list = identifier , { "," , identifier } ; (* e.g. <T>, <K,V> *)
+
 (* ── Function declaration ───────────────────────────────────────────────── *)
 
+(* return_type is optional — functions without it are void.
+   type_param_list makes the function generic: T identity<T>(const T v) { out = v } *)
 function_decl = [ modifier_list ]
+              , [ return_type ]
               , identifier
+              , [ "<" , type_param_list , ">" ]
               , "(" , [ param_list ] , ")"
               , block ;
 
 param_list = param , { "," , param } ;
 
-param = [ modifier_list ]
+param = [ "const" ]
       , type_ref
-      , identifier
-      , [ "=" , expr ] ;
+      , identifier ;
 
 (* ── Class / Struct / Interface ─────────────────────────────────────────── *)
 
+(* Classes support single inheritance (one struct or one interface).
+   Generic classes: class Wrapper<T> { ... }  instantiated as Wrapper<string>. *)
 class_decl = [ modifier_list ] , "class" , identifier
+           , [ "<" , type_param_list , ">" ]
            , [ ":" , base_list ]
            , "{" , { class_member } , "}" ;
 
+(* Structs support only struct-to-struct inheritance.
+   Plain new allocates on the stack; qualifiers (unique/shared/weak) move to heap. *)
 struct_decl = [ modifier_list ] , "struct" , identifier
+            , [ "<" , type_param_list , ">" ]
             , [ ":" , base_list ]
             , "{" , { class_member } , "}" ;
 
+(* Interfaces support only interface-to-interface inheritance. *)
 interface_decl = [ modifier_list ] , "interface" , identifier
                , [ ":" , base_list ]
-               , "{" , { class_member } , "}" ;
+               , "{" , { interface_member } , "}" ;
 
 base_list = qualified_name , { "," , qualified_name } ;
 
-class_member = field_decl | method_decl ;
+class_member     = field_decl | method_decl ;
+interface_member = method_signature ;
 
 field_decl = [ modifier_list ]
            , type_ref
            , identifier
            , [ "=" , expr ] ;
 
+(* Method with optional return type and generics — same rules as function_decl *)
 method_decl = [ modifier_list ]
+            , [ return_type ]
             , identifier
+            , [ "<" , type_param_list , ">" ]
             , "(" , [ param_list ] , ")"
             , block ;
+
+(* Interface method: declaration only, no body *)
+method_signature = [ modifier_list ]
+                 , [ return_type ]
+                 , identifier
+                 , "(" , [ param_list ] , ")"
+                 , ";" ;
 
 (* ── Enum ───────────────────────────────────────────────────────────────── *)
 
 enum_decl = [ modifier_list ] , "enum" , identifier
-          , [ ":" , type_ref ]
           , "{" , enum_body , "}" ;
 
 enum_body = enum_entry , { ( "," | newline ) , enum_entry } , [ "," ] ;
 
-enum_entry = [ modifier_list ] , identifier ;
+enum_entry = identifier ;
 
 (* ── Block ──────────────────────────────────────────────────────────────── *)
 
@@ -107,11 +148,12 @@ block = "{" , { stmt } , "}" ;
 (* ── Statements ─────────────────────────────────────────────────────────── *)
 
 stmt = var_decl_stmt
+     | out_assign
      | assign_stmt
+     | delete_stmt
      | if_stmt
      | switch_stmt
      | for_stmt
-     | for_in_stmt
      | while_stmt
      | return_stmt
      | break_stmt
@@ -120,7 +162,13 @@ stmt = var_decl_stmt
      | handle_stmt
      | expr_stmt ;
 
-var_decl_stmt = [ modifier_list ] , type_ref , identifier , [ "=" , expr ] ;
+var_decl_stmt = [ "const" ] , type_ref , identifier , [ "=" , expr ] ;
+
+(* 'out' is the implicit return-value holder; write to it instead of return.
+   out = expr          -- single return type
+   out[0] = expr       -- first value of a multi-return function
+   out[1] = expr       -- second value, etc. *)
+out_assign = "out" , [ "[" , integer_literal , "]" ] , "=" , expr ;
 
 assign_stmt = lvalue , assign_op , expr ;
 
@@ -128,6 +176,9 @@ assign_op = "=" | "+=" | "-=" | "*=" | "/=" | "%="
           | "&=" | "|=" | "^=" | "<<=" | ">>=" ;
 
 lvalue = identifier , { ( "." , identifier | "[" , expr , "]" ) } ;
+
+(* Frees a heap-allocated class instance (created with plain new or smart ptr) *)
+delete_stmt = "delete" , identifier ;
 
 (* ── Conditional ────────────────────────────────────────────────────────── *)
 
@@ -143,38 +194,47 @@ condition = expr | "(" , expr , ")" ;
 
 (* ── Switch ─────────────────────────────────────────────────────────────── *)
 
-switch_stmt = "switch" , "(" , expr , ")"
+switch_stmt = "switch" , condition
             , "{" , { case_clause } , [ default_clause ] , "}" ;
 
-case_clause    = "case"    , expr , ( ":" , { stmt } | block ) ;
-default_clause = "default" ,       ( ":" , { stmt } | block ) ;
+case_clause    = "case"    , expr , ":" , { stmt } ;
+default_clause = "default" ,       ":" , { stmt } ;
 
 (* ── Loops ──────────────────────────────────────────────────────────────── *)
 
-for_stmt = "for" , [ "(" ]
-         , [ for_init ] , ";" , [ expr ] , ";" , [ for_post ]
-         , [ ")" ] , block ;
+for_stmt = "for"
+         , ( for_init , ";" , [ expr ] , ";" , for_post )
+         , ( block | stmt ) ;
 
-for_init      = var_decl_stmt | assign_stmt | expr ;
+for_init      = var_decl_stmt , { "," , var_decl_stmt } ;
 for_post      = for_post_item , { "," , for_post_item } ;
 for_post_item = assign_stmt | expr ;
 
-for_in_stmt = "for" , [ "(" ]
-            , identifier , "in" , expr
-            , [ ")" ] , block ;
-
-while_stmt = "while" , condition , block ;
+while_stmt = "while" , condition , ( block | stmt ) ;
 
 (* ── Jump statements ────────────────────────────────────────────────────── *)
 
-return_stmt   = "return" , [ expr ] ;
+(* 'return' exits a void function early (no value).
+   Functions with a return type carry their result in 'out'; they may still
+   use 'return' to exit early before 'out' has been set. *)
+return_stmt   = "return" ;
 break_stmt    = "break" ;
 continue_stmt = "continue" ;
 
 (* ── Error handling ─────────────────────────────────────────────────────── *)
 
-fail_stmt   = "fail" , [ expr , [ "," , expr , [ "," , expr ] ] ] ;
-handle_stmt = "handle" , block ;
+(* fail signals an error. Accepts 0–3 comma-separated arguments:
+     integer code, string message, and/or object instance (in any order). *)
+fail_stmt = "fail" , [ expr , [ "," , expr , [ "," , expr ] ] ] ;
+
+(* handle intercepts errors raised inside the guarded block/statement.
+   Forms:
+     handle { ... }                      -- unnamed; error is silently swallowed
+     error err handle { ... }            -- named; inspect 'err' after the block
+     error err handle singleStatement    -- shorthand for a single call
+   Wildcard cannot be combined with alias. Error does NOT unwind the stack;
+   callee fail writes to the error struct and returns void. *)
+handle_stmt = [ "error" , identifier ] , "handle" , ( block | stmt ) ;
 
 expr_stmt = expr ;
 
@@ -184,7 +244,6 @@ expr = assignment_expr
      | ternary_expr
      | binary_expr
      | unary_expr
-     | cast_expr
      | new_expr
      | postfix_expr
      | primary ;
@@ -203,13 +262,18 @@ binary_op = "||" | "&&"
            | "+"  | "-"
            | "*"  | "/"  | "%" ;
 
-unary_expr = ( "!" | "++" | "--" ) , expr ;
+unary_expr = ( "!" | "++" | "--" | "-" | "+" ) , expr ;
 
-cast_expr = "(" , type_ref , ")" , expr ;
-
+(* new allocates an object.
+   Without qualifier  — struct: stack alloca; class: heap malloc (needs delete).
+   With qualifier     — always heap; lifetime managed automatically:
+     new unique T()   single owner, freed at scope exit, not copyable
+     new shared T()   reference-counted, freed when last ref exits scope
+     new weak T()     no refcount, each holder frees independently at scope exit
+   Generic instantiation: new Wrapper<int>(42) *)
 new_expr = "new"
-         , [ "<" , smart_ptr_kind , ">" ]
-         , qualified_name
+         , [ smart_ptr_kind ]
+         , type_ref
          , "(" , [ arg_list ] , ")" ;
 
 smart_ptr_kind = "unique" | "shared" | "weak" ;
@@ -222,11 +286,10 @@ postfix_expr = expr , "++"
 
 arg_list = expr , { "," , expr } ;
 
-primary = identifier
-        | qualified_name
+primary = "out" , [ "[" , expr , "]" ]
+        | identifier
         | literal
         | array_literal
-        | struct_literal
         | "(" , expr , ")" ;
 
 (* ── Literals ───────────────────────────────────────────────────────────── *)
@@ -236,8 +299,7 @@ literal = integer_literal
         | string_literal
         | char_literal
         | bool_literal
-        | null_literal
-        | unset_literal ;
+        | null_literal ;
 
 integer_literal = decimal_literal | hex_literal ;
 decimal_literal = digit , { digit } ;
@@ -248,18 +310,15 @@ float_literal = digit , { digit } , "." , { digit } ;
 string_literal = '"' , { string_char | escape_seq } , '"' ;
 char_literal   = "'" , ( char_char  | escape_seq ) , "'" ;
 
-escape_seq = "\" ,
-           ( "n" | "r" | "t" | "\" | "'" | '"' | "0"
+escape_seq = "\"
+           , ( "n" | "r" | "t" | "\" | "'" | '"' | "0"
            | "x" , hex_digit , hex_digit
            | "u" , hex_digit , hex_digit , hex_digit , hex_digit ) ;
 
-bool_literal  = "true" | "false" ;
-null_literal  = "null" ;
-unset_literal = "unset" ;
+bool_literal = "true" | "false" ;
+null_literal = "null" ;
 
-array_literal  = "{" , [ expr , { "," , expr } , [ "," ] ] , "}" ;
-struct_literal = "{" , struct_field , { "," , struct_field } , [ "," ] , "}" ;
-struct_field   = identifier , "=" , expr ;
+array_literal = "{" , [ expr , { "," , expr } , [ "," ] ] , "}" ;
 
 (* ── Annotation ─────────────────────────────────────────────────────────── *)
 
