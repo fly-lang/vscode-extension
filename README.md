@@ -1,4 +1,4 @@
-# Fly Language Support for Visual Studio Code
+# Fly Programming Language — Visual Studio Code Extension
 
 [![Build](https://github.com/fly-lang/vscode-extension/actions/workflows/vscode-extension.yml/badge.svg)](https://github.com/fly-lang/vscode-extension/actions/workflows/vscode-extension.yml)
 [![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/flylang.org.fly-vscode-extension?label=Marketplace)](https://marketplace.visualstudio.com/items?itemName=flylang.org.fly-vscode-extension)
@@ -26,7 +26,7 @@ Full language support for the [Fly programming language](https://flylang.org) in
 
 ### From the Marketplace
 
-Search for **Fly Language Support** in the Extensions panel (`Ctrl+Shift+X`) or install from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=flylang.org.fly-vscode-extension).
+Search for **Fly Programming Language** in the Extensions panel (`Ctrl+Shift+X`) or install from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=flylang.org.fly-vscode-extension).
 
 ### From a `.vsix` file
 
