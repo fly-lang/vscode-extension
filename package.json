@@ -2,7 +2,7 @@
   "name": "fly-vscode-extension",
   "displayName": "Fly Language Support",
   "description": "Support for the Fly programming language in Visual Studio Code, including syntax highlighting and code snippets.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "publisher": "fly-lang",
   "icon": "fly_logo.png",
   "license": "Apache-2.0",

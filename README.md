@@ -50,12 +50,22 @@ npm run package        # produces vscode-fly-<version>.vsix
 
 ## GitHub Actions — CI/CD setup
 
-The workflow (`.github/workflows/vscode-extension.yml`) runs automatically:
+The workflow (`.github/workflows/vscode-extension.yml`) has two triggers:
 
 | Trigger | Jobs executed |
 |---------|--------------|
-| Push to `main` | `build` — compiles and packages the `.vsix`, uploads it as a workflow artefact |
-| Push of a `v*` tag | `build` + `release` (GitHub Release) + `publish` (VS Code Marketplace) |
+| Push to `main` | `build` only — compiles, packages the `.vsix`, uploads it as a workflow artefact |
+| **Manual dispatch** (Actions tab) | `build` → `release` — creates tag, GitHub Release, and publishes to Marketplace |
+
+The release is **never automatic**. It only runs when you explicitly click **Run workflow** in the Actions tab.
+
+### How to publish a new release
+
+1. Bump the version in `package.json` and push the commit to `main`.
+2. Open the repository on GitHub → **Actions** → **VSCode Extension** → **Run workflow** → **Run workflow** (confirm).
+3. The workflow reads the version from `package.json`, checks that the tag does not already exist (fails immediately if it does), creates the tag, builds, and publishes.
+
+> If the tag `v<version>` already exists the release job fails with an explicit error. Bump the version in `package.json` and re-run.
 
 ### Secrets to configure
 
@@ -63,7 +73,7 @@ Go to **GitHub → repository → Settings → Secrets and variables → Actions
 
 #### `VSCE_PAT` — VS Code Marketplace Personal Access Token
 
-Required by the `publish` job. Without it the tag pipeline will fail at the Marketplace step.
+Required by the `release` job to publish to the Marketplace.
 
 How to create it:
 
@@ -79,17 +89,7 @@ How to create it:
 
 #### `GITHUB_TOKEN`
 
-Used by the `release` job to create GitHub Releases and attach the `.vsix`. This token is **provided automatically** by GitHub Actions — nothing to configure.
-
-### Publishing a new release
-
-```bash
-# bump version in package.json, commit, then:
-git tag v0.2.0
-git push origin v0.2.0
-```
-
-The tag push triggers the full pipeline: build → GitHub Release → Marketplace publish.
+Used to create the tag and the GitHub Release. **Provided automatically** by GitHub Actions — nothing to configure.
 
 ## Links
 

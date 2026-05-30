@@ -3,13 +3,15 @@ name: VSCode Extension
 on:
   push:
     branches: [main]
-    tags:
-      - "v*"
+
+  # Release is ONLY triggered manually from the Actions tab.
+  # It reads the version from package.json, creates the tag, and publishes.
   workflow_dispatch:
 
 jobs:
 
   # ── Build & package ──────────────────────────────────────────────────────
+  # Runs on every push to main and on every manual dispatch.
   build:
     runs-on: ubuntu-latest
 
@@ -24,7 +26,6 @@ jobs:
         with:
           node-version: "20"
           cache: "npm"
-          cache-dependency-path: package-lock.json
 
       - name: Install dependencies
         run: npm ci
@@ -32,12 +33,17 @@ jobs:
       - name: Compile TypeScript
         run: npm run compile
 
-      - name: Read extension metadata
+      - name: Read version from package.json
         id: meta
         run: |
           VERSION=$(node -p "require('./package.json').version")
-          echo "version=${VERSION}"               >> $GITHUB_OUTPUT
-          echo "vsix=vscode-fly-${VERSION}.vsix"  >> $GITHUB_OUTPUT
+          if [ -z "$VERSION" ]; then
+            echo "::error::Could not read version from package.json"
+            exit 1
+          fi
+          echo "version=${VERSION}"              >> $GITHUB_OUTPUT
+          echo "vsix=vscode-fly-${VERSION}.vsix" >> $GITHUB_OUTPUT
+          echo "Resolved version: ${VERSION}"
 
       - name: Package (.vsix)
         run: npx vsce package --out vscode-fly-${{ steps.meta.outputs.version }}.vsix
@@ -48,13 +54,38 @@ jobs:
           path: ${{ steps.meta.outputs.vsix }}
           if-no-files-found: error
 
-  # ── GitHub Release ───────────────────────────────────────────────────────
+  # ── Tag + GitHub Release + Marketplace publish ───────────────────────────
+  # Runs ONLY on manual workflow_dispatch.
+  # Fails immediately if the tag for the current version already exists.
   release:
     needs: [build]
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write   # needed to create tag and GitHub Release
 
     steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # full history so git ls-remote sees all tags
+
+      - name: Fail if tag already exists
+        run: |
+          VERSION=${{ needs.build.outputs.version }}
+          if git ls-remote --exit-code --tags origin "refs/tags/v${VERSION}" > /dev/null 2>&1; then
+            echo "::error::Tag v${VERSION} already exists. Bump the version in package.json before releasing."
+            exit 1
+          fi
+          echo "Tag v${VERSION} is available — proceeding with release."
+
+      - name: Create and push tag
+        run: |
+          VERSION=${{ needs.build.outputs.version }}
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "v${VERSION}"
+          git push origin "v${VERSION}"
+
       - uses: actions/download-artifact@v4
         with:
           name: vscode-fly-vsix
@@ -62,14 +93,16 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: v${{ needs.build.outputs.version }}
           name: "Fly VSCode Extension v${{ needs.build.outputs.version }}"
           body: |
             ## Fly Language Support for VSCode — v${{ needs.build.outputs.version }}
 
             ### What's included
-            - Syntax highlighting for `.fly` and `.f` files
+            - Syntax highlighting for `.fly` and `.fly.h` files
+            - `out` keyword highlighting, `delete`, generics `<T>`
             - Auto-closing brackets, block comments, and folding
-            - 22 built-in snippets (`class`, `struct`, `if`/`elsif`/`else`, `for-in`, `new<unique/shared>`, `fail`, `handle`, …)
+            - 37 built-in snippets (`fnr`, `classg`, `fng`, `importc`, `importw`, `errhandle`, …)
             - File icons for dark and light themes
 
             ### Install
@@ -83,17 +116,6 @@ jobs:
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ github.token }}
-
-  # ── VS Code Marketplace publish ──────────────────────────────────────────
-  publish:
-    needs: [build]
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
-
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: vscode-fly-vsix
 
       - uses: actions/setup-node@v4
         with:
