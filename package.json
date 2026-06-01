@@ -31,6 +31,12 @@
   "contributes": {
     "languages": [
       {
+        "id": "flyp-toml",
+        "aliases": ["Fly Manifest", "flyp-toml"],
+        "filenames": ["fly.toml"],
+        "configuration": "./flyp-toml-language-configuration.json"
+      },
+      {
         "id": "fly",
         "aliases": [
           "Fly",
@@ -49,6 +55,11 @@
     ],
     "grammars": [
       {
+        "language": "flyp-toml",
+        "scopeName": "source.flyp-toml",
+        "path": "./syntaxes/flyp-toml.tmLanguage.json"
+      },
+      {
         "language": "fly",
         "scopeName": "source.fly",
         "path": "./syntaxes/fly.tmLanguage.json"
@@ -59,12 +70,90 @@
         "command": "fly.selectCompiler",
         "title": "Fly: Select Compiler",
         "category": "Fly"
+      },
+      {
+        "command": "fly.buildFile",
+        "title": "Fly: Build File",
+        "category": "Fly",
+        "icon": "$(play)"
+      },
+      {
+        "command": "fly.flypBuild",
+        "title": "Flyp: Build",
+        "category": "Fly",
+        "icon": "$(play)"
+      },
+      {
+        "command": "fly.flypRun",
+        "title": "Flyp: Run",
+        "category": "Fly",
+        "icon": "$(run-above)"
+      },
+      {
+        "command": "fly.flypTest",
+        "title": "Flyp: Test",
+        "category": "Fly"
+      },
+      {
+        "command": "fly.flypAdd",
+        "title": "Flyp: Add Dependency",
+        "category": "Fly"
+      },
+      {
+        "command": "fly.flypLock",
+        "title": "Flyp: Lock (Update fly.lock)",
+        "category": "Fly"
       }
     ],
+    "keybindings": [
+      {
+        "command": "fly.buildFile",
+        "key": "ctrl+shift+b",
+        "when": "editorLangId == fly"
+      },
+      {
+        "command": "fly.buildFile",
+        "key": "cmd+shift+b",
+        "when": "editorLangId == fly"
+      },
+      {
+        "command": "fly.flypBuild",
+        "key": "ctrl+shift+b",
+        "when": "resourceFilename == fly.toml"
+      },
+      {
+        "command": "fly.flypBuild",
+        "key": "cmd+shift+b",
+        "when": "resourceFilename == fly.toml"
+      }
+    ],
+    "menus": {
+      "editor/title/run": [
+        {
+          "command": "fly.buildFile",
+          "when": "resourceLangId == fly",
+          "group": "navigation"
+        },
+        {
+          "command": "fly.flypBuild",
+          "when": "resourceFilename == fly.toml",
+          "group": "navigation@1"
+        },
+        {
+          "command": "fly.flypRun",
+          "when": "resourceFilename == fly.toml",
+          "group": "navigation@2"
+        }
+      ]
+    },
     "snippets": [
       {
         "language": "fly",
         "path": "./snippets/fly.code-snippets"
+      },
+      {
+        "language": "flyp-toml",
+        "path": "./snippets/flyp-toml.code-snippets"
       }
     ],
     "configuration": {
@@ -89,6 +178,21 @@
           "type": "boolean",
           "default": true,
           "description": "Enable the Fly Language Server for semantic features (hover on symbols, go-to-definition, find references)."
+        },
+        "fly.buildArgs": {
+          "type": "string",
+          "default": "",
+          "description": "Extra arguments appended to the fly compiler when running 'Fly: Build File', e.g. \"-O2\" or \"-o bin/myapp\"."
+        },
+        "fly.flypPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to the flyp binary. Leave empty to auto-discover next to fly.compilerPath."
+        },
+        "fly.flypBuildArgs": {
+          "type": "string",
+          "default": "",
+          "description": "Extra arguments appended to flyp build, e.g. \"--release\" or \"--target mybin\"."
         }
       }
     }

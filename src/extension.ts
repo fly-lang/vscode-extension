@@ -7,6 +7,10 @@ import { FlyDiagnosticsProvider }    from './providers/diagnostics';
 import { startLspClient, stopLspClient } from './lsp/client';
 import { findFlyInstallations, detectVersion, deriveLspPath } from './compiler/finder';
 import { createStatusBar, refresh as refreshStatusBar } from './compiler/statusBar';
+import { resolveFlypPath, resolveFlyTomlDir } from './flyp/finder';
+import { FlyTomlCompletionProvider } from './flyp/completions';
+import { FlyTomlHoverProvider }      from './flyp/hover';
+import { FlyTomlDiagnosticsProvider } from './flyp/diagnostics';
 
 const FLY_SELECTOR: vscode.DocumentSelector = { language: 'fly', scheme: 'file' };
 
@@ -82,6 +86,118 @@ export function activate(context: vscode.ExtensionContext): void {
 
             void refreshStatusBar(vscode.window.activeTextEditor);
             vscode.window.showInformationMessage(`Fly compiler set to ${newPath} (v${version})`);
+        }),
+    );
+
+    // ── Build command ──────────────────────────────────────────────────────
+    let buildTerminal: vscode.Terminal | undefined;
+    context.subscriptions.push(
+        vscode.commands.registerCommand('fly.buildFile', async () => {
+            const editor = vscode.window.activeTextEditor;
+            if (!editor || editor.document.languageId !== 'fly') {
+                vscode.window.showWarningMessage('Fly: Open a .fly file to build.');
+                return;
+            }
+            // Save before building so the compiler sees up-to-date source.
+            await editor.document.save();
+
+            const cfg          = vscode.workspace.getConfiguration('fly');
+            const compiler     = cfg.get<string>('compilerPath', 'fly');
+            const extraArgs    = cfg.get<string>('buildArgs', '').trim();
+            const filePath     = editor.document.uri.fsPath;
+            const quotedFile   = `"${filePath.replace(/"/g, '\\"')}"`;
+            const cmd          = [compiler, quotedFile, extraArgs].filter(Boolean).join(' ');
+
+            // Reuse existing terminal if still alive, otherwise create a new one.
+            if (!buildTerminal || buildTerminal.exitStatus !== undefined) {
+                buildTerminal = vscode.window.createTerminal('Fly Build');
+            }
+            buildTerminal.show(true);   // true = preserve editor focus
+            buildTerminal.sendText(cmd);
+        }),
+    );
+
+    // ── fly.toml providers ────────────────────────────────────────────────
+    const TOML_SEL: vscode.DocumentSelector = { language: 'flyp-toml', scheme: 'file' };
+
+    context.subscriptions.push(
+        vscode.languages.registerCompletionItemProvider(TOML_SEL, new FlyTomlCompletionProvider()),
+        vscode.languages.registerHoverProvider(TOML_SEL, new FlyTomlHoverProvider()),
+    );
+
+    const tomlDiag         = vscode.languages.createDiagnosticCollection('flyp-toml');
+    const tomlDiagProvider = new FlyTomlDiagnosticsProvider(tomlDiag);
+    context.subscriptions.push(tomlDiag);
+
+    context.subscriptions.push(
+        vscode.workspace.onDidOpenTextDocument(doc => {
+            if (doc.languageId === 'flyp-toml') tomlDiagProvider.run(doc);
+        }),
+        vscode.workspace.onDidSaveTextDocument(doc => {
+            if (doc.languageId === 'flyp-toml') tomlDiagProvider.run(doc);
+        }),
+        vscode.workspace.onDidCloseTextDocument(doc => {
+            if (doc.languageId === 'flyp-toml') tomlDiagProvider.clear(doc.uri);
+        }),
+    );
+    for (const doc of vscode.workspace.textDocuments) {
+        if (doc.languageId === 'flyp-toml') tomlDiagProvider.run(doc);
+    }
+
+    // ── flyp commands ─────────────────────────────────────────────────────
+    let flypTerminal: vscode.Terminal | undefined;
+
+    function runFlyp(args: string[]): void {
+        const projectDir = resolveFlyTomlDir();
+        if (!projectDir) {
+            vscode.window.showWarningMessage('Flyp: could not find fly.toml in this workspace.');
+            return;
+        }
+        const flyp = resolveFlypPath();
+        const cmd  = [flyp, ...args].join(' ');
+
+        if (!flypTerminal || flypTerminal.exitStatus !== undefined) {
+            flypTerminal = vscode.window.createTerminal('Flyp');
+        }
+        flypTerminal.show(true);
+        flypTerminal.sendText(`cd "${projectDir.replace(/"/g, '\\"')}" && ${cmd}`);
+    }
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('fly.flypBuild', () => {
+            const cfg   = vscode.workspace.getConfiguration('fly');
+            const extra = cfg.get<string>('flypBuildArgs', '').trim();
+            runFlyp(extra ? ['build', ...extra.split(/\s+/)] : ['build']);
+        }),
+        vscode.commands.registerCommand('fly.flypRun',  () => runFlyp(['run'])),
+        vscode.commands.registerCommand('fly.flypTest', () => runFlyp(['test'])),
+        vscode.commands.registerCommand('fly.flypLock', () => runFlyp(['lock'])),
+        vscode.commands.registerCommand('fly.flypAdd',  async () => {
+            const name = await vscode.window.showInputBox({
+                prompt: 'Dependency name (e.g. my-lib)',
+                validateInput: v => /^[a-z0-9_-]+$/.test(v) ? undefined : 'Name must match [a-z0-9_-]+',
+            });
+            if (!name) return;
+
+            const gitUrl = await vscode.window.showInputBox({
+                prompt: 'Git repository URL (e.g. https://github.com/user/repo.git)',
+                validateInput: v => v.startsWith('http') || v.startsWith('git@') ? undefined : 'Enter a valid git URL',
+            });
+            if (!gitUrl) return;
+
+            const refType = await vscode.window.showQuickPick(
+                ['tag', 'branch', 'rev'],
+                { placeHolder: 'Reference type' },
+            );
+            if (!refType) return;
+
+            const refLabel = refType === 'tag' ? 'Tag (e.g. v1.0.0)' :
+                             refType === 'branch' ? 'Branch name (e.g. main)' :
+                             'Commit hash (40 characters)';
+            const refValue = await vscode.window.showInputBox({ prompt: refLabel });
+            if (!refValue) return;
+
+            runFlyp(['add', name, '--git', gitUrl, `--${refType}`, refValue]);
         }),
     );
 

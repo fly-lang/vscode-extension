@@ -1,0 +1,95 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Fly Manifest (fly.toml)",
+  "scopeName": "source.flyp-toml",
+  "patterns": [
+    { "include": "#comment" },
+    { "include": "#array-table-header" },
+    { "include": "#table-header" },
+    { "include": "#key-value" }
+  ],
+  "repository": {
+    "comment": {
+      "name": "comment.line.number-sign.flyp-toml",
+      "match": "#.*$"
+    },
+    "array-table-header": {
+      "name": "entity.name.section.array.flyp-toml",
+      "match": "^\\s*(\\[\\[\\s*(bin|lib|test)\\s*\\]\\])",
+      "captures": {
+        "1": { "name": "entity.name.section.array.flyp-toml" }
+      }
+    },
+    "table-header": {
+      "name": "entity.name.section.flyp-toml",
+      "match": "^\\s*(\\[\\s*(package|dependencies|dev-dependencies|profile\\.debug|profile\\.release)\\s*\\])",
+      "captures": {
+        "1": { "name": "entity.name.section.flyp-toml" }
+      }
+    },
+    "key-value": {
+      "patterns": [
+        { "include": "#known-key" },
+        { "include": "#value" }
+      ]
+    },
+    "known-key": {
+      "match": "^\\s*(name|version|description|license|fly-version|authors|homepage|repository|path|type|git|tag|branch|rev|opt-level|debug-info|assertions|lto|strip)\\s*(=)",
+      "captures": {
+        "1": { "name": "keyword.other.key.flyp-toml" },
+        "2": { "name": "punctuation.separator.key-value.flyp-toml" }
+      }
+    },
+    "value": {
+      "patterns": [
+        { "include": "#string" },
+        { "include": "#boolean" },
+        { "include": "#integer" },
+        { "include": "#inline-table" },
+        { "include": "#array" }
+      ]
+    },
+    "string": {
+      "name": "string.quoted.double.flyp-toml",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [
+        { "name": "constant.character.escape.flyp-toml", "match": "\\\\." }
+      ]
+    },
+    "boolean": {
+      "name": "constant.language.boolean.flyp-toml",
+      "match": "\\b(true|false)\\b"
+    },
+    "integer": {
+      "name": "constant.numeric.integer.flyp-toml",
+      "match": "\\b[0-9]+\\b"
+    },
+    "inline-table": {
+      "begin": "\\{",
+      "end": "\\}",
+      "beginCaptures": { "0": { "name": "punctuation.definition.table.begin.flyp-toml" } },
+      "endCaptures":   { "0": { "name": "punctuation.definition.table.end.flyp-toml" } },
+      "patterns": [
+        { "include": "#inline-key" },
+        { "include": "#string" }
+      ]
+    },
+    "inline-key": {
+      "match": "\\b(git|tag|branch|rev)\\s*(=)",
+      "captures": {
+        "1": { "name": "keyword.other.key.inline.flyp-toml" },
+        "2": { "name": "punctuation.separator.key-value.flyp-toml" }
+      }
+    },
+    "array": {
+      "begin": "\\[",
+      "end": "\\]",
+      "beginCaptures": { "0": { "name": "punctuation.definition.array.begin.flyp-toml" } },
+      "endCaptures":   { "0": { "name": "punctuation.definition.array.end.flyp-toml" } },
+      "patterns": [
+        { "include": "#string" }
+      ]
+    }
+  }
+}

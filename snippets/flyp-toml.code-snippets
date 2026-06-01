@@ -1,0 +1,120 @@
+{
+  "Full manifest": {
+    "prefix": "manifest",
+    "scope": "flyp-toml",
+    "description": "Complete fly.toml template",
+    "body": [
+      "[package]",
+      "name        = \"${1:my-project}\"",
+      "version     = \"${2:0.1.0}\"",
+      "description = \"${3}\"",
+      "license     = \"${4:Apache-2.0}\"",
+      "fly-version = \"${5:0.12.4}\"",
+      "",
+      "[[bin]]",
+      "name = \"${6:${1:my-project}}\"",
+      "path = \"src/main.fly\"",
+      "",
+      "[profile.debug]",
+      "opt-level  = 0",
+      "debug-info = true",
+      "assertions = true",
+      "",
+      "[profile.release]",
+      "opt-level  = 3",
+      "debug-info = false",
+      "assertions = false",
+      "lto        = false",
+      "strip      = false",
+      "$0"
+    ]
+  },
+  "Binary target": {
+    "prefix": "bin",
+    "scope": "flyp-toml",
+    "description": "[[bin]] target block",
+    "body": [
+      "[[bin]]",
+      "name = \"${1:app}\"",
+      "path = \"${2:src/main.fly}\"",
+      "$0"
+    ]
+  },
+  "Library target": {
+    "prefix": "lib",
+    "scope": "flyp-toml",
+    "description": "[[lib]] target block",
+    "body": [
+      "[[lib]]",
+      "name = \"${1:mylib}\"",
+      "path = \"${2:src/lib.fly}\"",
+      "type = \"${3|static,dynamic,both|}\"",
+      "$0"
+    ]
+  },
+  "Test target": {
+    "prefix": "test",
+    "scope": "flyp-toml",
+    "description": "[[test]] target block",
+    "body": [
+      "[[test]]",
+      "name = \"${1:unit}\"",
+      "path = \"${2:tests/unit.fly}\"",
+      "$0"
+    ]
+  },
+  "Git dependency (tag)": {
+    "prefix": "dep",
+    "scope": "flyp-toml",
+    "description": "Dependency pinned to a git tag",
+    "body": [
+      "${1:my-lib} = { git = \"${2:https://github.com/user/repo.git}\", tag = \"${3:v1.0.0}\" }$0"
+    ]
+  },
+  "Git dependency (branch)": {
+    "prefix": "depb",
+    "scope": "flyp-toml",
+    "description": "Dependency pinned to a git branch",
+    "body": [
+      "${1:my-lib} = { git = \"${2:https://github.com/user/repo.git}\", branch = \"${3:main}\" }$0"
+    ]
+  },
+  "Git dependency (rev)": {
+    "prefix": "depr",
+    "scope": "flyp-toml",
+    "description": "Dependency pinned to an exact git commit",
+    "body": [
+      "${1:my-lib} = { git = \"${2:https://github.com/user/repo.git}\", rev = \"${3:0000000000000000000000000000000000000000}\" }$0"
+    ]
+  },
+  "Dev dependency": {
+    "prefix": "devdep",
+    "scope": "flyp-toml",
+    "description": "[dev-dependencies] section with one entry",
+    "body": [
+      "[dev-dependencies]",
+      "${1:test-lib} = { git = \"${2:https://github.com/user/repo.git}\", tag = \"${3:v1.0.0}\" }$0"
+    ]
+  },
+  "Build profiles": {
+    "prefix": "profile",
+    "scope": "flyp-toml",
+    "description": "[profile.debug] and [profile.release] blocks",
+    "body": [
+      "[profile.debug]",
+      "opt-level  = 0",
+      "debug-info = true",
+      "assertions = true",
+      "lto        = false",
+      "strip      = false",
+      "",
+      "[profile.release]",
+      "opt-level  = 3",
+      "debug-info = false",
+      "assertions = false",
+      "lto        = ${1|false,true|}",
+      "strip      = ${2|false,true|}",
+      "$0"
+    ]
+  }
+}
