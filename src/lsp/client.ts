@@ -1,17 +1,18 @@
-import * as path from 'path';
+import * as path   from 'path';
 import * as vscode from 'vscode';
-import {
-    LanguageClient,
+// Type-only import: erased at compile time, generates NO runtime require().
+// The actual module is loaded lazily inside startLspClient() so a missing
+// vscode-languageclient package never prevents the rest of the extension
+// (commands, status bar, providers) from loading.
+import type {
+    LanguageClient as LCType,
     LanguageClientOptions,
     ServerOptions,
-    TransportKind,
+    TransportKind as TKType,
 } from 'vscode-languageclient/node';
 
-let client: LanguageClient | undefined;
+let client: LCType | undefined;
 
-// Derive the fly-lsp path from settings.
-// If fly.lspPath is set explicitly, use it directly.
-// Otherwise look for fly-lsp in the same directory as fly.compilerPath.
 function resolveLspPath(): string {
     const cfg = vscode.workspace.getConfiguration('fly');
     const explicit = cfg.get<string>('lspPath', '').trim();
@@ -19,13 +20,28 @@ function resolveLspPath(): string {
 
     const compilerPath = cfg.get<string>('compilerPath', 'fly');
     const dir = path.dirname(compilerPath);
-    // dirname('fly') === '.'  → compiler is on PATH, assume lsp is too
     return dir === '.' ? 'fly-lsp' : path.join(dir, 'fly-lsp');
 }
 
 export function startLspClient(context: vscode.ExtensionContext): void {
     const cfg = vscode.workspace.getConfiguration('fly');
     if (!cfg.get<boolean>('enableLsp', true)) return;
+
+    let LanguageClient: typeof LCType;
+    let TransportKind: typeof TKType;
+    try {
+        // Lazy require: deferred until this function runs so a missing module
+        // only disables LSP features, not the entire extension.
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        ({ LanguageClient, TransportKind } =
+            require('vscode-languageclient/node') as typeof import('vscode-languageclient/node'));
+    } catch {
+        vscode.window.showWarningMessage(
+            'Fly: vscode-languageclient module not found — LSP features disabled. ' +
+            'Run `npm install` in the extension directory.',
+        );
+        return;
+    }
 
     const serverPath = resolveLspPath();
 
@@ -49,7 +65,7 @@ export function startLspClient(context: vscode.ExtensionContext): void {
         clientOptions,
     );
 
-    // LanguageClient itself is Disposable in v9; start() returns Promise<void>
+    // LanguageClient is Disposable in v9; start() returns Promise<void>
     context.subscriptions.push(client);
     void client.start();
 }
