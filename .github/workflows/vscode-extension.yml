@@ -96,11 +96,10 @@ jobs:
             ## Fly Language Support for VSCode — v${{ needs.build.outputs.version }}
 
             ### What's included
-            - Syntax highlighting for `.fly` and `.fly.h` files
-            - `out` keyword highlighting, `delete`, generics `<T>`
-            - Auto-closing brackets, block comments, and folding
-            - 37 built-in snippets (`fnr`, `classg`, `fng`, `importc`, `importw`, `errhandle`, …)
-            - File icons for dark and light themes
+            - Add LSP
+            - Go-to-definition       
+            - Find references    
+            - Hover for user symbols 
 
             ### Install
             Download `${{ needs.build.outputs.vsix }}` then run:
