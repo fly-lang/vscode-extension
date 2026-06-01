@@ -4,6 +4,8 @@ node_modules/
 # TypeScript build output
 out/
 
+package-lock.json
+
 # Packaged extension
 *.vsix
 
