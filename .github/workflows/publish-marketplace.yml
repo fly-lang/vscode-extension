@@ -96,10 +96,7 @@ jobs:
             ## Fly Language Support for VSCode — v${{ needs.build.outputs.version }}
 
             ### What's included
-            - Add LSP
-            - Go-to-definition       
-            - Find references    
-            - Hover for user symbols 
+            - AUpdate lsp path
 
             ### Install
             Download `${{ needs.build.outputs.vsix }}` then run:

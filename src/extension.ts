@@ -1,3 +1,4 @@
+import * as fs    from 'fs';
 import * as vscode from 'vscode';
 import { FlyDocumentSymbolProvider } from './providers/documentSymbol';
 import { FlyHoverProvider }          from './providers/hover';
@@ -66,11 +67,17 @@ export function activate(context: vscode.ExtensionContext): void {
             }
 
             await config.update('compilerPath', newPath, vscode.ConfigurationTarget.Global);
-            // Auto-fill lspPath if the user hasn't set it explicitly
-            const lspExplicit = config.get<string>('lspPath', '').trim();
-            if (!lspExplicit) {
-                const lsp = deriveLspPath(newPath);
-                await config.update('lspPath', lsp, vscode.ConfigurationTarget.Global);
+            // Always sync lspPath to the new compiler directory so a stale path
+            // from a previous installation never persists.
+            const derivedLsp = deriveLspPath(newPath);
+            await config.update('lspPath', derivedLsp, vscode.ConfigurationTarget.Global);
+
+            if (!fs.existsSync(derivedLsp)) {
+                vscode.window.showWarningMessage(
+                    `fly-lsp not found at "${derivedLsp}". ` +
+                    `LSP features (go-to-definition, hover on symbols) will be disabled. ` +
+                    `Set fly.lspPath manually if the server is installed elsewhere.`,
+                );
             }
 
             void refreshStatusBar(vscode.window.activeTextEditor);

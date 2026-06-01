@@ -1,5 +1,6 @@
+import * as fs   from 'fs';
 import * as vscode from 'vscode';
-import { detectVersion } from './finder';
+import { detectVersion, deriveLspPath } from './finder';
 
 let item: vscode.StatusBarItem | undefined;
 
@@ -19,7 +20,8 @@ export function createStatusBar(context: vscode.ExtensionContext): void {
 
     context.subscriptions.push(
         vscode.workspace.onDidChangeConfiguration(e => {
-            if (e.affectsConfiguration('fly.compilerPath')) {
+            if (e.affectsConfiguration('fly.compilerPath') ||
+                e.affectsConfiguration('fly.lspPath')) {
                 void refresh(vscode.window.activeTextEditor);
             }
         }),
@@ -34,9 +36,14 @@ export async function refresh(editor: vscode.TextEditor | undefined): Promise<vo
     const isFly = editor?.document.languageId === 'fly';
     if (!isFly) { item.hide(); return; }
 
-    const flyPath = vscode.workspace.getConfiguration('fly').get<string>('compilerPath', 'fly');
+    const cfg     = vscode.workspace.getConfiguration('fly');
+    const flyPath = cfg.get<string>('compilerPath', 'fly');
+    const lspPath = cfg.get<string>('lspPath', '').trim() || deriveLspPath(flyPath);
     const version = await detectVersion(flyPath);
+    const lspOk   = fs.existsSync(lspPath);
 
-    item.text    = version ? `$(tools) fly ${version}` : `$(warning) fly (not found)`;
+    item.text = version
+        ? `$(tools) fly ${version}${lspOk ? '' : '  $(warning) no lsp'}`
+        : `$(warning) fly (not found)`;
     item.show();
 }
