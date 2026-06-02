@@ -1,4 +1,6 @@
 import * as fs    from 'fs';
+import * as os    from 'os';
+import * as path  from 'path';
 import * as vscode from 'vscode';
 import { FlyDocumentSymbolProvider } from './providers/documentSymbol';
 import { FlyHoverProvider }          from './providers/hover';
@@ -90,7 +92,8 @@ export function activate(context: vscode.ExtensionContext): void {
     );
 
     // ── Build command ──────────────────────────────────────────────────────
-    let buildTerminal: vscode.Terminal | undefined;
+    // Uses vscode.tasks.executeTask() so errors appear in the Problems panel
+    // via the $fly problem matcher.
     context.subscriptions.push(
         vscode.commands.registerCommand('fly.buildFile', async () => {
             const editor = vscode.window.activeTextEditor;
@@ -98,22 +101,60 @@ export function activate(context: vscode.ExtensionContext): void {
                 vscode.window.showWarningMessage('Fly: Open a .fly file to build.');
                 return;
             }
-            // Save before building so the compiler sees up-to-date source.
             await editor.document.save();
 
-            const cfg          = vscode.workspace.getConfiguration('fly');
-            const compiler     = cfg.get<string>('compilerPath', 'fly');
-            const extraArgs    = cfg.get<string>('buildArgs', '').trim();
-            const filePath     = editor.document.uri.fsPath;
-            const quotedFile   = `"${filePath.replace(/"/g, '\\"')}"`;
-            const cmd          = [compiler, quotedFile, extraArgs].filter(Boolean).join(' ');
+            const cfg        = vscode.workspace.getConfiguration('fly');
+            const compiler   = cfg.get<string>('compilerPath', 'fly');
+            const extraArgs  = cfg.get<string>('buildArgs', '').trim();
+            const filePath   = editor.document.uri.fsPath;
+            const quotedFile = `"${filePath.replace(/"/g, '\\"')}"`;
+            const cmd        = [compiler, quotedFile, extraArgs].filter(Boolean).join(' ');
 
-            // Reuse existing terminal if still alive, otherwise create a new one.
-            if (!buildTerminal || buildTerminal.exitStatus !== undefined) {
-                buildTerminal = vscode.window.createTerminal('Fly Build');
+            const task = new vscode.Task(
+                { type: 'fly', task: 'build' },
+                vscode.TaskScope.Workspace,
+                'Build File',
+                'fly',
+                new vscode.ShellExecution(cmd),
+                '$fly',
+            );
+            task.presentationOptions = {
+                reveal: vscode.TaskRevealKind.Always,
+                panel:  vscode.TaskPanelKind.Shared,
+                clear:  true,
+            };
+            await vscode.tasks.executeTask(task);
+        }),
+    );
+
+    // ── Run command (compile + execute in one terminal) ───────────────────
+    let runTerminal: vscode.Terminal | undefined;
+    context.subscriptions.push(
+        vscode.commands.registerCommand('fly.runFile', async () => {
+            const editor = vscode.window.activeTextEditor;
+            if (!editor || editor.document.languageId !== 'fly') {
+                vscode.window.showWarningMessage('Fly: Open a .fly file to run.');
+                return;
             }
-            buildTerminal.show(true);   // true = preserve editor focus
-            buildTerminal.sendText(cmd);
+            await editor.document.save();
+
+            const cfg        = vscode.workspace.getConfiguration('fly');
+            const compiler   = cfg.get<string>('compilerPath', 'fly');
+            const filePath   = editor.document.uri.fsPath;
+
+            // Output binary in the system temp dir to avoid polluting the project.
+            const baseName   = path.basename(filePath, '.fly');
+            const outPath    = path.join(os.tmpdir(), baseName);
+            const q          = (s: string) => `"${s.replace(/"/g, '\\"')}"`;
+            const compileCmd = `${q(compiler)} ${q(filePath)} -o ${q(outPath)}`;
+            const runCmd     = q(outPath);
+
+            if (!runTerminal || runTerminal.exitStatus !== undefined) {
+                runTerminal = vscode.window.createTerminal('Fly Run');
+            }
+            runTerminal.show(false);   // false = focus the terminal
+            // Compile first; only run if compilation succeeds (&&).
+            runTerminal.sendText(`${compileCmd} && ${runCmd}`);
         }),
     );
 
@@ -164,10 +205,32 @@ export function activate(context: vscode.ExtensionContext): void {
     }
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('fly.flypBuild', () => {
+        vscode.commands.registerCommand('fly.flypBuild', async () => {
+            const projectDir = resolveFlyTomlDir();
+            if (!projectDir) {
+                vscode.window.showWarningMessage('Flyp: could not find fly.toml in this workspace.');
+                return;
+            }
+            const flyp  = resolveFlypPath();
             const cfg   = vscode.workspace.getConfiguration('fly');
             const extra = cfg.get<string>('flypBuildArgs', '').trim();
-            runFlyp(extra ? ['build', ...extra.split(/\s+/)] : ['build']);
+            const args  = extra ? ['build', ...extra.split(/\s+/)] : ['build'];
+            const cmd   = `cd "${projectDir.replace(/"/g, '\\"')}" && ${flyp} ${args.join(' ')}`;
+
+            const task = new vscode.Task(
+                { type: 'fly', task: 'flyp-build' },
+                vscode.TaskScope.Workspace,
+                'Flyp Build',
+                'flyp',
+                new vscode.ShellExecution(cmd),
+                '$fly',
+            );
+            task.presentationOptions = {
+                reveal: vscode.TaskRevealKind.Always,
+                panel:  vscode.TaskPanelKind.Shared,
+                clear:  true,
+            };
+            await vscode.tasks.executeTask(task);
         }),
         vscode.commands.registerCommand('fly.flypRun',  () => runFlyp(['run'])),
         vscode.commands.registerCommand('fly.flypTest', () => runFlyp(['test'])),

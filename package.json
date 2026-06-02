@@ -2,7 +2,7 @@
   "name": "fly-vscode-extension",
   "displayName": "Fly Programming Language",
   "description": "Fly programming language support for Visual Studio Code: syntax highlighting, snippets, and language configuration for .fly files.",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "publisher": "fly-lang",
   "icon": "fly_logo.png",
   "license": "Apache-2.0",
@@ -78,6 +78,12 @@
         "icon": "$(play)"
       },
       {
+        "command": "fly.runFile",
+        "title": "Fly: Run File",
+        "category": "Fly",
+        "icon": "$(run)"
+      },
+      {
         "command": "fly.flypBuild",
         "title": "Flyp: Build",
         "category": "Fly",
@@ -117,6 +123,16 @@
         "when": "editorLangId == fly"
       },
       {
+        "command": "fly.runFile",
+        "key": "ctrl+f5",
+        "when": "editorLangId == fly"
+      },
+      {
+        "command": "fly.runFile",
+        "key": "cmd+f5",
+        "when": "editorLangId == fly"
+      },
+      {
         "command": "fly.flypBuild",
         "key": "ctrl+shift+b",
         "when": "resourceFilename == fly.toml"
@@ -130,9 +146,14 @@
     "menus": {
       "editor/title/run": [
         {
+          "command": "fly.runFile",
+          "when": "resourceLangId == fly",
+          "group": "navigation@1"
+        },
+        {
           "command": "fly.buildFile",
           "when": "resourceLangId == fly",
-          "group": "navigation"
+          "group": "navigation@2"
         },
         {
           "command": "fly.flypBuild",
@@ -146,6 +167,33 @@
         }
       ]
     },
+    "problemMatchers": [
+      {
+        "name": "fly",
+        "owner": "fly",
+        "fileLocation": ["absolute"],
+        "pattern": {
+          "regexp": "^fly: (.+?):(\\d+):(\\d+):\\s+(error|warning|note|remark):\\s+(.+)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "severity": 4,
+          "message": 5
+        }
+      }
+    ],
+    "taskDefinitions": [
+      {
+        "type": "fly",
+        "required": ["task"],
+        "properties": {
+          "task": {
+            "type": "string",
+            "description": "The fly task to run (e.g. build)"
+          }
+        }
+      }
+    ],
     "snippets": [
       {
         "language": "fly",
