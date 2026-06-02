@@ -84,6 +84,12 @@
         "icon": "$(run)"
       },
       {
+        "command": "fly.debugFile",
+        "title": "Fly: Debug File",
+        "category": "Fly",
+        "icon": "$(debug-alt)"
+      },
+      {
         "command": "fly.flypBuild",
         "title": "Flyp: Build",
         "category": "Fly",
@@ -133,6 +139,11 @@
         "when": "editorLangId == fly"
       },
       {
+        "command": "fly.debugFile",
+        "key": "f5",
+        "when": "editorLangId == fly && !inDebugMode"
+      },
+      {
         "command": "fly.flypBuild",
         "key": "ctrl+shift+b",
         "when": "resourceFilename == fly.toml"
@@ -146,14 +157,19 @@
     "menus": {
       "editor/title/run": [
         {
-          "command": "fly.runFile",
+          "command": "fly.debugFile",
           "when": "resourceLangId == fly",
           "group": "navigation@1"
         },
         {
-          "command": "fly.buildFile",
+          "command": "fly.runFile",
           "when": "resourceLangId == fly",
           "group": "navigation@2"
+        },
+        {
+          "command": "fly.buildFile",
+          "when": "resourceLangId == fly",
+          "group": "navigation@3"
         },
         {
           "command": "fly.flypBuild",
@@ -167,6 +183,40 @@
         }
       ]
     },
+    "breakpoints": [
+      { "language": "fly" }
+    ],
+    "debuggers": [
+      {
+        "type": "fly",
+        "label": "Fly Debug",
+        "languages": ["fly"],
+        "initialConfigurations": [
+          {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Fly: Debug File",
+            "program": "${fileDirname}/${fileBasenameNoExtension}",
+            "args": [],
+            "cwd": "${workspaceFolder}"
+          }
+        ],
+        "configurationSnippets": [
+          {
+            "label": "Fly: Launch and debug current file",
+            "description": "Compile with --debug and launch under LLDB (requires the codelldb extension).",
+            "body": {
+              "type": "lldb",
+              "request": "launch",
+              "name": "Fly: Debug File",
+              "program": "^\"\\${fileDirname}/\\${fileBasenameNoExtension}\"",
+              "args": [],
+              "cwd": "^\"\\${workspaceFolder}\""
+            }
+          }
+        ]
+      }
+    ],
     "problemMatchers": [
       {
         "name": "fly",
@@ -241,6 +291,16 @@
           "type": "string",
           "default": "",
           "description": "Extra arguments appended to flyp build, e.g. \"--release\" or \"--target mybin\"."
+        },
+        "fly.debugBuildArgs": {
+          "type": "string",
+          "default": "--debug",
+          "description": "Extra compiler flags used by 'Fly: Debug File', e.g. \"--debug -O0\"."
+        },
+        "fly.enableWorkspaceDiagnostics": {
+          "type": "boolean",
+          "default": true,
+          "description": "Scan all .fly files in the workspace for errors at startup, not only files that are explicitly opened."
         }
       }
     }

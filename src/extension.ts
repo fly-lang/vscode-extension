@@ -334,6 +334,77 @@ export function activate(context: vscode.ExtensionContext): void {
             diagProvider.schedule(doc);
         }
     }
+
+    // ── Workspace-wide diagnostics ─────────────────────────────────────────
+    // Scan all .fly files at startup so the Problems panel reflects the full
+    // project, not just files the user has explicitly opened.
+    const runWorkspaceScan = async (): Promise<void> => {
+        const cfg = vscode.workspace.getConfiguration('fly');
+        if (!cfg.get<boolean>('enableWorkspaceDiagnostics', true)) return;
+        const uris = await vscode.workspace.findFiles('**/*.fly', '**/node_modules/**');
+        const openPaths = new Set(
+            vscode.workspace.textDocuments.map(d => d.uri.fsPath)
+        );
+        for (const uri of uris) {
+            if (!openPaths.has(uri.fsPath)) {
+                diagProvider.runForPath(uri.fsPath);
+            }
+        }
+    };
+    void runWorkspaceScan();
+
+    // Re-run diagnostics when new .fly files appear in the workspace.
+    const flyWatcher = vscode.workspace.createFileSystemWatcher('**/*.fly');
+    context.subscriptions.push(flyWatcher);
+    context.subscriptions.push(
+        flyWatcher.onDidCreate(uri => diagProvider.runForPath(uri.fsPath)),
+    );
+
+    // ── Debug command (compile with --debug, launch via LLDB) ─────────────
+    context.subscriptions.push(
+        vscode.commands.registerCommand('fly.debugFile', async () => {
+            const editor = vscode.window.activeTextEditor;
+            if (!editor || editor.document.languageId !== 'fly') {
+                vscode.window.showWarningMessage('Fly: Open a .fly file to debug.');
+                return;
+            }
+            await editor.document.save();
+
+            const cfg        = vscode.workspace.getConfiguration('fly');
+            const compiler   = cfg.get<string>('compilerPath', 'fly');
+            const debugArgs  = cfg.get<string>('debugBuildArgs', '--debug').trim();
+            const filePath   = editor.document.uri.fsPath;
+            const baseName   = path.basename(filePath, '.fly');
+            const outPath    = path.join(os.tmpdir(), baseName);
+            const q          = (s: string) => `"${s.replace(/"/g, '\\"')}"`;
+            const compileCmd = [q(compiler), q(filePath), debugArgs, '-o', q(outPath)]
+                .filter(Boolean).join(' ');
+
+            // Compile first; on success launch the LLDB debugger.
+            const proc = require('child_process').execSync;
+            try {
+                require('child_process').execFileSync(
+                    compiler,
+                    [filePath, ...debugArgs.split(/\s+/).filter(Boolean), '-o', outPath],
+                    { stdio: 'inherit' },
+                );
+            } catch {
+                vscode.window.showErrorMessage(
+                    `Fly: Compilation failed. Check the terminal for errors.`
+                );
+                return;
+            }
+
+            await vscode.debug.startDebugging(undefined, {
+                type:    'lldb',
+                request: 'launch',
+                name:    'Fly Debug',
+                program: outPath,
+                args:    [],
+                cwd:     path.dirname(filePath),
+            });
+        }),
+    );
 }
 
 export async function deactivate(): Promise<void> {

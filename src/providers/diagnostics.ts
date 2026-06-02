@@ -45,12 +45,24 @@ export class FlyDiagnosticsProvider {
         this.collection.delete(uri);
     }
 
+    /** Run diagnostics on a file path without requiring an open TextDocument. */
+    runForPath(filePath: string): void {
+        const config = vscode.workspace.getConfiguration('fly');
+        if (!config.get<boolean>('enableDiagnostics', true)) return;
+        this.runCompiler(filePath, vscode.Uri.file(filePath));
+    }
+
     private run(document: vscode.TextDocument): void {
         const config = vscode.workspace.getConfiguration('fly');
         if (!config.get<boolean>('enableDiagnostics', true)) return;
 
-        const compilerPath = config.get<string>('compilerPath', 'fly');
         const filePath = document.uri.fsPath;
+        this.runCompiler(filePath, document.uri);
+    }
+
+    private runCompiler(filePath: string, primaryUri: vscode.Uri): void {
+        const config = vscode.workspace.getConfiguration('fly');
+        const compilerPath = config.get<string>('compilerPath', 'fly');
         const tmpFile = path.join(os.tmpdir(), `fly-diag-${Date.now()}.json`);
 
         const args = [
@@ -86,7 +98,7 @@ export class FlyDiagnosticsProvider {
                 }
 
                 // Clear current file first, then set diagnostics per file
-                this.collection.delete(document.uri);
+                this.collection.delete(primaryUri);
                 for (const [file, diags] of byFile) {
                     this.collection.set(vscode.Uri.file(file), diags);
                 }

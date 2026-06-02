@@ -18,13 +18,16 @@ Full language support for the [Fly programming language](https://flylang.org) in
 - **Block folding** and block comment support
 - **Built-in snippets** covering declarations, control flow, memory management, and error handling
 - **Live diagnostics** — compiler errors and warnings shown inline on save
-- **Go to Definition**, **Hover**, and **Document Highlights** via the `fly-lsp` language server
+- **Go to Definition**, **Find References**, **Hover**, **Signature Help**, and **Document Highlights** via the `fly-lsp` language server
+- **Debugger integration** — compile with debug symbols and launch under LLDB with a single keystroke (`F5`)
+- **Workspace diagnostics** — all `.fly` files in the project are checked at startup, not only open ones
 - **fly.toml** manifest support — completions, hover docs, and validation for the `flyp` package manager
 
 ## Requirements
 
 - Visual Studio Code `^1.82.0`
 - [Fly compiler](https://github.com/fly-lang/fly) (`fly` and `fly-lsp` on `PATH`, or configured via settings)
+- [codelldb](https://marketplace.visualstudio.com/items?itemName=vadimcn.vscode-lldb) extension — required for **Fly: Debug File** (`F5`)
 
 ## Installation
 
@@ -60,9 +63,11 @@ To run in development mode, open the folder in VS Code and press **F5**. This co
 |---|---|---|
 | `fly.compilerPath` | `fly` | Path to the Fly compiler binary |
 | `fly.lspPath` | _(auto)_ | Path to `fly-lsp`; auto-discovered next to `fly.compilerPath` |
-| `fly.enableLsp` | `true` | Enable the language server (hover, go-to-definition, highlights) |
+| `fly.enableLsp` | `true` | Enable the language server (hover, go-to-definition, references, signature help, highlights) |
 | `fly.enableDiagnostics` | `true` | Run compiler on save and show inline diagnostics |
+| `fly.enableWorkspaceDiagnostics` | `true` | Scan all `.fly` files in the workspace at startup |
 | `fly.buildArgs` | _(empty)_ | Extra flags appended to `fly` when running **Fly: Build File** |
+| `fly.debugBuildArgs` | `--debug` | Compiler flags used by **Fly: Debug File** |
 | `fly.flypPath` | _(auto)_ | Path to `flyp`; auto-discovered next to `fly.compilerPath` |
 | `fly.flypBuildArgs` | _(empty)_ | Extra flags appended to `flyp build` |
 
@@ -79,8 +84,9 @@ Open the Command Palette with `Ctrl+Shift+P` (`Cmd+Shift+P` on macOS) and type *
 | **Fly: Select Compiler** | — | Open a quick-pick to choose the active Fly installation. Auto-fills `fly.lspPath` from the same directory. |
 | **Fly: Build File** | `Ctrl+Shift+B` | Compile the current `.fly` file. Errors appear in the **Problems** panel via the `$fly` problem matcher. |
 | **Fly: Run File** | `Ctrl+F5` | Compile and immediately run the current `.fly` file in the integrated terminal. Uses `&&` — the program is not launched if compilation fails. |
+| **Fly: Debug File** | `F5` | Compile with debug symbols and launch the program under LLDB. Requires the [codelldb](https://marketplace.visualstudio.com/items?itemName=vadimcn.vscode-lldb) extension. Breakpoints set in `.fly` files are respected. |
 
-The **Run** `$(run)` and **Build** `$(play)` buttons also appear in the editor title bar whenever a `.fly` file is active.
+The **Debug** `$(debug-alt)`, **Run** `$(run)`, and **Build** `$(play)` buttons appear in the editor title bar whenever a `.fly` file is active.
 
 ### Package manager commands — active on `fly.toml`
 
