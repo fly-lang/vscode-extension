@@ -85,11 +85,58 @@ const DOCS: Record<string, KeyDoc> = {
     },
 };
 
+// Hover documentation for section headers (matched by line pattern, not word).
+interface SectionDoc { title: string; doc: string; }
+const SECTION_DOCS: Record<string, SectionDoc> = {
+    '[[bin]]': {
+        title: '[[bin]] — Binary target',
+        doc: 'Declares a binary executable target. Uses **double brackets** because TOML `[[section]]` means *array of tables*: you can repeat `[[bin]]` multiple times in the same file, each entry defines one binary.\n\n```toml\n[[bin]]\nname = "app"\npath = "src/main.fly"\n\n[[bin]]\nname = "cli"\npath = "src/cli.fly"\n```\n\nIf no `[[bin]]` is declared, flyp auto-detects `src/main.fly`.',
+    },
+    '[[lib]]': {
+        title: '[[lib]] — Library target',
+        doc: 'Declares a library target. Uses **double brackets** to allow multiple libraries in one project.\n\n```toml\n[[lib]]\nname = "mylib"\npath = "src/lib.fly"\ntype = "static"   # or "dynamic" or "both"\n```\n\n`type` defaults to `"static"` if omitted. If no `[[lib]]` is declared, flyp auto-detects `src/lib.fly`.',
+    },
+    '[[test]]': {
+        title: '[[test]] — Test suite target',
+        doc: 'Declares a test suite. Uses **double brackets** to allow multiple test suites.\n\n```toml\n[[test]]\nname = "unit"\npath = "tests/unit.fly"\n\n[[test]]\nname = "integration"\npath = "tests/integration.fly"\n```\n\nRun all suites with `flyp test`, or a specific one with `flyp test unit`.',
+    },
+    '[package]': {
+        title: '[package] — Package metadata',
+        doc: 'The main manifest section. Uses **single brackets** because exactly one `[package]` section is allowed per `fly.toml`. Contains required fields `name` and `version`.',
+    },
+    '[dependencies]': {
+        title: '[dependencies] — Runtime dependencies',
+        doc: 'Lists git-based dependencies resolved by `flyp`. Each entry is a key-value pair:\n\n```toml\n[dependencies]\nmy-lib = { git = "https://github.com/user/repo.git", tag = "v1.0.0" }\n```\n\nExactly one of `tag`, `branch`, or `rev` is required.',
+    },
+    '[dev-dependencies]': {
+        title: '[dev-dependencies] — Development-only dependencies',
+        doc: 'Same format as `[dependencies]` but these packages are not propagated to packages that depend on yours — only available during local development and testing.',
+    },
+    '[profile.debug]': {
+        title: '[profile.debug] — Debug build profile',
+        doc: 'Compiler settings used by `flyp build` (default mode). Defaults: `opt-level=0`, `debug-info=true`, `assertions=true`.',
+    },
+    '[profile.release]': {
+        title: '[profile.release] — Release build profile',
+        doc: 'Compiler settings used by `flyp build --release`. Defaults: `opt-level=3`, `debug-info=false`, `assertions=false`.',
+    },
+};
+
 export class FlyTomlHoverProvider implements vscode.HoverProvider {
     provideHover(
         document: vscode.TextDocument,
         position: vscode.Position,
     ): vscode.Hover | undefined {
+        // Check if the cursor is on a section header line.
+        const lineText = document.lineAt(position.line).text.trim();
+        const sectionEntry = SECTION_DOCS[lineText];
+        if (sectionEntry) {
+            const md = new vscode.MarkdownString();
+            md.appendMarkdown(`**${sectionEntry.title}**\n\n${sectionEntry.doc}`);
+            md.isTrusted = true;
+            return new vscode.Hover(md, document.lineAt(position.line).range);
+        }
+
         const wordRange = document.getWordRangeAtPosition(position, /[\w-]+/);
         if (!wordRange) return undefined;
 
