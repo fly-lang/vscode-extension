@@ -75,3 +75,8 @@ export function stopLspClient(): Thenable<void> | undefined {
     client = undefined;
     return c?.stop();
 }
+
+/** Returns the active LanguageClient, or undefined if not started. */
+export function getLspClient(): LCType | undefined {
+    return client;
+}

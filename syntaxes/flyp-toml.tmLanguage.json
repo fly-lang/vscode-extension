@@ -6,89 +6,143 @@
     { "include": "#comment" },
     { "include": "#array-table-header" },
     { "include": "#table-header" },
-    { "include": "#key-value" }
+    { "include": "#keyval" }
   ],
   "repository": {
+
     "comment": {
       "name": "comment.line.number-sign.flyp-toml",
-      "match": "#.*$"
+      "match": "\\s*#.*$"
     },
+
     "array-table-header": {
-      "name": "entity.name.section.array.flyp-toml",
-      "match": "^\\s*(\\[\\[\\s*(bin|lib|test)\\s*\\]\\])",
+      "comment": "[[bin]], [[lib]], [[test]] — array-of-tables header",
+      "match": "^\\s*(\\[\\[)\\s*([a-zA-Z_][\\w\\-.]*?)\\s*(\\]\\])",
       "captures": {
-        "1": { "name": "entity.name.section.array.flyp-toml" }
+        "1": { "name": "punctuation.definition.table.array.begin.flyp-toml" },
+        "2": { "name": "entity.name.section.array.flyp-toml" },
+        "3": { "name": "punctuation.definition.table.array.end.flyp-toml" }
       }
     },
+
     "table-header": {
-      "name": "entity.name.section.flyp-toml",
-      "match": "^\\s*(\\[\\s*(package|dependencies|dev-dependencies|profile\\.debug|profile\\.release)\\s*\\])",
+      "comment": "[package], [dependencies], [profile.debug] etc.",
+      "match": "^\\s*(\\[)\\s*([a-zA-Z_][\\w\\-.]*?)\\s*(\\])",
       "captures": {
-        "1": { "name": "entity.name.section.flyp-toml" }
+        "1": { "name": "punctuation.definition.table.begin.flyp-toml" },
+        "2": { "name": "entity.name.section.flyp-toml" },
+        "3": { "name": "punctuation.definition.table.end.flyp-toml" }
       }
     },
-    "key-value": {
+
+    "keyval": {
       "patterns": [
-        { "include": "#known-key" },
-        { "include": "#value" }
+        { "include": "#comment" },
+        { "include": "#key-equals" },
+        { "include": "#val" }
       ]
     },
-    "known-key": {
-      "match": "^\\s*(name|version|description|license|fly-version|authors|homepage|repository|path|type|git|tag|branch|rev|opt-level|debug-info|assertions|lto|strip)\\s*(=)",
+
+    "key-equals": {
+      "comment": "Key name followed by = on a line (top-level keys)",
+      "match": "^\\s*([a-zA-Z_][\\w\\-]*)\\s*(=)",
       "captures": {
-        "1": { "name": "keyword.other.key.flyp-toml" },
+        "1": { "name": "support.type.property-name.flyp-toml" },
         "2": { "name": "punctuation.separator.key-value.flyp-toml" }
       }
     },
-    "value": {
+
+    "val": {
       "patterns": [
-        { "include": "#string" },
-        { "include": "#boolean" },
-        { "include": "#integer" },
+        { "include": "#string-basic" },
+        { "include": "#string-literal" },
         { "include": "#inline-table" },
-        { "include": "#array" }
+        { "include": "#array-val" },
+        { "include": "#boolean" },
+        { "include": "#integer" }
       ]
     },
-    "string": {
+
+    "string-basic": {
       "name": "string.quoted.double.flyp-toml",
       "begin": "\"",
       "end": "\"",
       "patterns": [
-        { "name": "constant.character.escape.flyp-toml", "match": "\\\\." }
+        { "name": "constant.character.escape.flyp-toml",
+          "match": "\\\\[btnfr\"\\\\]" },
+        { "name": "constant.character.escape.unicode.flyp-toml",
+          "match": "\\\\u[0-9a-fA-F]{4}" },
+        { "name": "constant.character.escape.unicode.long.flyp-toml",
+          "match": "\\\\U[0-9a-fA-F]{8}" }
       ]
     },
+
+    "string-literal": {
+      "name": "string.quoted.single.flyp-toml",
+      "begin": "'",
+      "end": "'"
+    },
+
     "boolean": {
       "name": "constant.language.boolean.flyp-toml",
       "match": "\\b(true|false)\\b"
     },
+
     "integer": {
       "name": "constant.numeric.integer.flyp-toml",
-      "match": "\\b[0-9]+\\b"
+      "match": "(?<![\\w\\-])[-+]?(?:0|[1-9][0-9]*)(?![\\w\\.])"
     },
+
     "inline-table": {
+      "name": "meta.structure.table.inline.flyp-toml",
       "begin": "\\{",
       "end": "\\}",
-      "beginCaptures": { "0": { "name": "punctuation.definition.table.begin.flyp-toml" } },
-      "endCaptures":   { "0": { "name": "punctuation.definition.table.end.flyp-toml" } },
+      "beginCaptures": { "0": { "name": "punctuation.definition.table.inline.begin.flyp-toml" } },
+      "endCaptures":   { "0": { "name": "punctuation.definition.table.inline.end.flyp-toml" } },
       "patterns": [
-        { "include": "#inline-key" },
-        { "include": "#string" }
+        { "include": "#comment" },
+        { "include": "#inline-keyval" },
+        { "name": "punctuation.separator.inline-table.flyp-toml", "match": "," }
       ]
     },
-    "inline-key": {
-      "match": "\\b(git|tag|branch|rev)\\s*(=)",
-      "captures": {
-        "1": { "name": "keyword.other.key.inline.flyp-toml" },
-        "2": { "name": "punctuation.separator.key-value.flyp-toml" }
-      }
+
+    "inline-keyval": {
+      "comment": "key = value pairs inside { }",
+      "patterns": [
+        {
+          "comment": "key = \"string value\"",
+          "match": "([a-zA-Z_][\\w\\-]*)\\s*(=)\\s*(\"[^\"]*\")",
+          "captures": {
+            "1": { "name": "support.type.property-name.inline.flyp-toml" },
+            "2": { "name": "punctuation.separator.key-value.flyp-toml" },
+            "3": { "name": "string.quoted.double.flyp-toml" }
+          }
+        },
+        {
+          "comment": "key = bare (boolean / integer)",
+          "match": "([a-zA-Z_][\\w\\-]*)\\s*(=)\\s*(true|false|[-+]?[0-9]+)",
+          "captures": {
+            "1": { "name": "support.type.property-name.inline.flyp-toml" },
+            "2": { "name": "punctuation.separator.key-value.flyp-toml" },
+            "3": { "name": "constant.language.flyp-toml" }
+          }
+        }
+      ]
     },
-    "array": {
+
+    "array-val": {
+      "name": "meta.structure.array.flyp-toml",
       "begin": "\\[",
       "end": "\\]",
       "beginCaptures": { "0": { "name": "punctuation.definition.array.begin.flyp-toml" } },
       "endCaptures":   { "0": { "name": "punctuation.definition.array.end.flyp-toml" } },
       "patterns": [
-        { "include": "#string" }
+        { "include": "#comment" },
+        { "include": "#string-basic" },
+        { "include": "#string-literal" },
+        { "include": "#boolean" },
+        { "include": "#integer" },
+        { "name": "punctuation.separator.array.flyp-toml", "match": "," }
       ]
     }
   }

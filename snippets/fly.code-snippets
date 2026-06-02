@@ -317,5 +317,47 @@
       " */"
     ],
     "description": "Block doc comment"
+  },
+
+  "Class field": {
+    "prefix": "field",
+    "body": ["${1|public,private|} ${2:int} ${3:name}"],
+    "description": "Class field declaration"
+  },
+
+  "Array declaration": {
+    "prefix": "arr",
+    "body": ["${1:int}[] ${2:arr} = new ${1:int}[${3:n}]"],
+    "description": "Array declaration and allocation"
+  },
+
+  "Generic list": {
+    "prefix": "list",
+    "body": ["import fly.data.List", "", "List<${1:int}> ${2:items} = new List<${1:int}>()"],
+    "description": "Fly generic List"
+  },
+
+  "Interface with method": {
+    "prefix": "iface",
+    "body": [
+      "public interface ${1:IName} {",
+      "\t${2:void} ${3:method}(${4})",
+      "}"
+    ],
+    "description": "Interface declaration with one abstract method"
+  },
+
+  "Getter and setter": {
+    "prefix": "getset",
+    "body": [
+      "public ${1:int} get${2:Name}() {",
+      "\tout = ${3:_field}",
+      "}",
+      "",
+      "public void set${2:Name}(const ${1:int} value) {",
+      "\t${3:_field} = value",
+      "}"
+    ],
+    "description": "Getter and setter for a field"
   }
 }

@@ -29,6 +29,41 @@
   "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
+    "walkthroughs": [
+      {
+        "id": "fly-getting-started",
+        "title": "Get Started with Fly",
+        "description": "Set up the Fly compiler, write your first program, and build and debug it.",
+        "steps": [
+          {
+            "id": "select-compiler",
+            "title": "Select the Fly compiler",
+            "description": "Run **Fly: Select Compiler** to point the extension to your Fly installation. The status bar shows the active version once found.\n\n[Select Compiler](command:fly.selectCompiler)",
+            "media": { "markdown": "media/first-file.md", "altText": "Compiler selector" },
+            "completionEvents": ["onCommand:fly.selectCompiler"]
+          },
+          {
+            "id": "first-file",
+            "title": "Write your first Fly program",
+            "description": "Create a `.fly` file and start typing — hover docs, completions, and syntax highlighting activate automatically.",
+            "media": { "markdown": "media/first-file.md" }
+          },
+          {
+            "id": "build-run",
+            "title": "Build and run",
+            "description": "Press **Ctrl+F5** to compile and run, **Ctrl+Shift+B** to build only, or **F5** to launch the debugger (requires codelldb).",
+            "media": { "markdown": "media/first-file.md" },
+            "completionEvents": ["onCommand:fly.runFile", "onCommand:fly.buildFile"]
+          },
+          {
+            "id": "flyp",
+            "title": "Manage your project with flyp",
+            "description": "Open a `fly.toml` manifest to access package manager commands: **Flyp: Build**, **Flyp: Run**, **Flyp: Add Dependency**, and more.",
+            "media": { "markdown": "media/first-file.md" }
+          }
+        ]
+      }
+    ],
     "languages": [
       {
         "id": "flyp-toml",
@@ -114,6 +149,11 @@
       {
         "command": "fly.flypLock",
         "title": "Flyp: Lock (Update fly.lock)",
+        "category": "Fly"
+      },
+      {
+        "command": "fly.flypRunCmd",
+        "title": "Flyp: Run Command",
         "category": "Fly"
       }
     ],

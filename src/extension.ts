@@ -10,9 +10,11 @@ import { startLspClient, stopLspClient } from './lsp/client';
 import { findFlyInstallations, detectVersion, deriveLspPath } from './compiler/finder';
 import { createStatusBar, refresh as refreshStatusBar } from './compiler/statusBar';
 import { resolveFlypPath, resolveFlyTomlDir } from './flyp/finder';
-import { FlyTomlCompletionProvider } from './flyp/completions';
-import { FlyTomlHoverProvider }      from './flyp/hover';
-import { FlyTomlDiagnosticsProvider } from './flyp/diagnostics';
+import { FlyTomlCompletionProvider }    from './flyp/completions';
+import { FlyTomlHoverProvider }         from './flyp/hover';
+import { FlyTomlDiagnosticsProvider }   from './flyp/diagnostics';
+import { FlyTomlCodeLensProvider }      from './flyp/codeLens';
+import { FlyTomlDocumentLinkProvider }  from './flyp/documentLink';
 
 const FLY_SELECTOR: vscode.DocumentSelector = { language: 'fly', scheme: 'file' };
 
@@ -164,6 +166,8 @@ export function activate(context: vscode.ExtensionContext): void {
     context.subscriptions.push(
         vscode.languages.registerCompletionItemProvider(TOML_SEL, new FlyTomlCompletionProvider()),
         vscode.languages.registerHoverProvider(TOML_SEL, new FlyTomlHoverProvider()),
+        vscode.languages.registerCodeLensProvider(TOML_SEL, new FlyTomlCodeLensProvider()),
+        vscode.languages.registerDocumentLinkProvider(TOML_SEL, new FlyTomlDocumentLinkProvider()),
     );
 
     const tomlDiag         = vscode.languages.createDiagnosticCollection('flyp-toml');
@@ -235,6 +239,8 @@ export function activate(context: vscode.ExtensionContext): void {
         vscode.commands.registerCommand('fly.flypRun',  () => runFlyp(['run'])),
         vscode.commands.registerCommand('fly.flypTest', () => runFlyp(['test'])),
         vscode.commands.registerCommand('fly.flypLock', () => runFlyp(['lock'])),
+        // Used by CodeLens actions in fly.toml (Update / Remove dependency).
+        vscode.commands.registerCommand('fly.flypRunCmd', (args: string[]) => runFlyp(args)),
         vscode.commands.registerCommand('fly.flypAdd',  async () => {
             const name = await vscode.window.showInputBox({
                 prompt: 'Dependency name (e.g. my-lib)',
