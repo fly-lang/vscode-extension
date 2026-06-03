@@ -58,6 +58,20 @@ const KEYWORD_DOCS: Record<string, HoverEntry> = {
         doc: 'Declares the namespace for the current file. Must be the first declaration, before any imports.\n\n```fly\nnamespace com.example.utils\n```\n\nDotted names create nested namespaces. If omitted, a default namespace based on the filename is used.',
     },
 
+    // Testing
+    suite: {
+        detail: '(keyword) suite',
+        doc: 'Declares a test suite — activates `test {}` blocks inside production functions by supplying inputs through named `case` steps.\n\n```fly\nsuite MathSuite {\n    void setup()    { /* once before all tests */ }\n    void teardown() { /* once after all tests  */ }\n\n    void classifyTest() {\n        case "positive": classify(5)\n        case "negative": classify(-3)\n    }\n}\n```\n\nMethods ending in `Test` are test-methods and run automatically. `setup` and `teardown` are lifecycle hooks recognised by exact name (not keywords). Helper methods (any other name) can be called from case blocks.',
+    },
+    test: {
+        detail: '(keyword) test',
+        doc: 'Inline test block — written directly inside a production function to observe its local state read-only.\n\n```fly\nstring classify(const int n) {\n    if n > 0 {\n        out = "positive"\n        test {\n            assertTrue(out == "positive")\n        }\n    }\n}\n```\n\nIn **release** builds the block is completely stripped — zero IR, zero overhead.\nIn **test** mode (`fly --test`, triggered by `flyp test`) it executes only when an active suite is running. Writing to outer-scope variables is a compile error.',
+    },
+    case: {
+        detail: '(keyword) case',
+        doc: 'Two uses:\n\n**1. Switch dispatch** — matches a value and jumps to the matching block:\n```fly\nswitch (x) {\n    case 1: doA() break\n    default: doB()\n}\n```\n\n**2. Suite test step** — named sequential execution inside a test-method:\n```fly\nvoid classifyTest() {\n    case "positive": classify(5)\n    case "negative": classify(-3)\n}\n```\nAll cases execute in order (no break, no dispatch). Each case has its own isolated error handler — an assertion failure in one case does not abort the others.',
+    },
+
     // Built-in types
     bool:   { detail: '(type) bool',   doc: 'Boolean type. Values: `true` or `false`.' },
     byte:   { detail: '(type) byte',   doc: 'Unsigned 8-bit integer. Range: 0–255.' },

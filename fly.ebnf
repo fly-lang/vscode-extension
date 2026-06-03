@@ -27,7 +27,8 @@ top_decl = function_decl
          | class_decl
          | struct_decl
          | interface_decl
-         | enum_decl ;
+         | enum_decl
+         | suite_decl ;
 
 (* ── Modifiers ──────────────────────────────────────────────────────────── *)
 
@@ -160,6 +161,8 @@ stmt = var_decl_stmt
      | continue_stmt
      | fail_stmt
      | handle_stmt
+     | test_block
+     | case_step
      | expr_stmt ;
 
 var_decl_stmt = [ "const" ] , type_ref , identifier , [ "=" , expr ] ;
@@ -199,6 +202,33 @@ switch_stmt = "switch" , condition
 
 case_clause    = "case"    , expr , ":" , { stmt } ;
 default_clause = "default" ,       ":" , { stmt } ;
+
+(* ── Test system ─────────────────────────────────────────────────────────── *)
+
+(* test {} — inline observer block written inside a production function.
+   In release builds the block is completely stripped (zero IR, zero overhead).
+   In test mode (fly --test) it executes only when an active suite is running.
+   The block has read-only access to all enclosing-function locals and 'out';
+   writing to outer-scope variables is a compile error. *)
+test_block = "test" , "{" , { stmt } , "}" ;
+
+(* suite — top-level test driver (syntactically parallel to class).
+   Methods ending with "Test" are test-methods and run automatically.
+   "setup" / "teardown" are lifecycle hooks (not keywords — recognised by name).
+   Any other method name is a helper callable from case blocks. *)
+suite_decl   = "suite" , identifier , "{" , { suite_member } , "}" ;
+suite_member = suite_method | field_decl ;
+suite_method = [ modifier_list ] , type_ref , identifier ,
+               "(" , [ param_list ] , ")" ,
+               ( "{" , { suite_stmt } , "}" ) ;
+
+(* Inside a test-method body, case_step is the primary statement form.
+   Helper methods may contain arbitrary stmts instead. *)
+suite_stmt = case_step | stmt ;
+
+(* case "label": stmt-or-block — all cases execute sequentially (unlike switch).
+   Each case gets its own isolated error handler scope. *)
+case_step = "case" , string_literal , ":" , ( block | stmt ) ;
 
 (* ── Loops ──────────────────────────────────────────────────────────────── *)
 

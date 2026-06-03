@@ -18,8 +18,18 @@ Full language support for the [Fly programming language](https://flylang.org) in
 - **File icons** for dark and light themes
 - **Auto-closing** brackets and parentheses
 - **Smart folding** — AST-aware folding for function and class bodies, plus manual `// #region` / `// #endregion` markers
-- **Built-in snippets** — 40+ snippets covering namespaces, functions, classes, interfaces, control flow, memory management, error handling, and common patterns (`field`, `arr`, `getset`, `list`, `iface`, …)
+- **Built-in snippets** — 44+ snippets covering namespaces, functions, classes, interfaces, suites, test blocks, control flow, memory management, error handling, and common patterns (`field`, `arr`, `getset`, `list`, `iface`, …)
 - **Onboarding walkthrough** — **Help → Get Started → "Get Started with Fly"** guides you through compiler setup, first program, build/run, and flyp project management
+
+### Testing
+
+Fly's test system is intrinsic to the language — tests live inside production code with zero overhead in release builds.
+
+- **`test {}`** blocks are highlighted as a control-flow keyword. They are written directly inside production functions to observe local state read-only. In release builds they are stripped completely; in test mode they are activated by an active `suite`.
+- **`suite`** declarations are highlighted as type declarations (keyword + name, like `class`). Methods ending in `Test` are test-methods executed automatically; `setup` / `teardown` are lifecycle hooks recognised by exact name.
+- **`case "label":`** steps inside test-methods are highlighted and distinguished from switch `case` by the string-literal label. All steps execute sequentially with isolated error scopes.
+- **Snippets:** `suite` (full scaffold with setup/teardown), `testm` (test-method with a case), `testb` (inline `test {}` block), `tcase` (single case step).
+- **Hover documentation** on `suite`, `test`, and `case` explains all valid contexts, including the distinction between switch-case and test-case.
 
 ### Language intelligence (via `fly-lsp`)
 - **Hover** — documentation for keywords, built-in types, and user-defined symbols (functions, classes, variables)

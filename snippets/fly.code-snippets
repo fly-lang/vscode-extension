@@ -150,6 +150,53 @@
     "description": "Enum declaration"
   },
 
+  "Suite": {
+    "prefix": "suite",
+    "body": [
+      "suite ${1:Name} {",
+      "",
+      "\tvoid setup() {",
+      "\t\t$0",
+      "\t}",
+      "",
+      "\tvoid teardown() {",
+      "\t\t",
+      "\t}",
+      "",
+      "\tvoid ${2:name}Test() {",
+      "\t\tcase \"${3:label}\": $4",
+      "\t}",
+      "}"
+    ],
+    "description": "Suite declaration with setup/teardown lifecycle hooks and one test-method"
+  },
+
+  "Test method": {
+    "prefix": "testm",
+    "body": [
+      "void ${1:name}Test() {",
+      "\tcase \"${2:label}\": $0",
+      "}"
+    ],
+    "description": "Suite test-method — name must end with 'Test'. Contains case blocks that all execute sequentially."
+  },
+
+  "Test block (inline)": {
+    "prefix": "testb",
+    "body": [
+      "test {",
+      "\t$0",
+      "}"
+    ],
+    "description": "Inline test block — written inside a production function to observe local state. Completely stripped in release builds; activated by a suite in test mode."
+  },
+
+  "Test case": {
+    "prefix": "tcase",
+    "body": ["case \"${1:label}\": $0"],
+    "description": "Named case step inside a suite test-method — all cases execute sequentially. Each has its own isolated error scope."
+  },
+
   "If": {
     "prefix": "if",
     "body": [

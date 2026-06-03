@@ -82,8 +82,8 @@
     "type-declarations": {
       "patterns": [
         {
-          "comment": "class / struct / interface / enum Name",
-          "match": "\\b(class|struct|interface|enum)\\s+([a-zA-Z_][a-zA-Z0-9_]*)",
+          "comment": "class / struct / interface / enum / suite Name",
+          "match": "\\b(class|struct|interface|enum|suite)\\s+([a-zA-Z_][a-zA-Z0-9_]*)",
           "captures": {
             "1": { "name": "storage.type.fly" },
             "2": { "name": "entity.name.type.fly" }
@@ -94,7 +94,7 @@
 
     "keywords-control": {
       "name": "keyword.control.fly",
-      "match": "\\b(if|elsif|else|switch|case|default|for|in|while|return|break|continue|fail|handle)\\b"
+      "match": "\\b(if|elsif|else|switch|case|default|for|in|while|return|break|continue|fail|handle|test)\\b"
     },
 
     "keywords-other": {
