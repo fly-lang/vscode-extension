@@ -11,56 +11,114 @@
       "license     = \"${4:Apache-2.0}\"",
       "fly-version = \"${5:0.12.4}\"",
       "",
-      "[[bin]]",
-      "name = \"${6:${1:my-project}}\"",
-      "path = \"src/main.fly\"",
+      "[targets]",
+      "${6:${1:my-project}} = { path = \"src/main.fly\" }",
       "",
-      "[profile.debug]",
-      "opt-level  = 0",
-      "debug-info = true",
-      "assertions = true",
+      "# [repo]",
+      "# local = \"http://localhost:5000\"",
       "",
-      "[profile.release]",
-      "opt-level  = 3",
-      "debug-info = false",
-      "assertions = false",
-      "lto        = false",
-      "strip      = false",
+      "[profiles]",
+      "debug   = { opt-level = 0, debug-info = true,  assertions = true,  lto = false, strip = false }",
+      "release = { opt-level = 3, debug-info = false, assertions = false, lto = false, strip = false }",
       "$0"
     ]
   },
   "Binary target": {
     "prefix": "bin",
     "scope": "flyp-toml",
-    "description": "[[bin]] target block",
+    "description": "[targets] binary entry",
     "body": [
-      "[[bin]]",
-      "name = \"${1:app}\"",
-      "path = \"${2:src/main.fly}\"",
+      "[targets]",
+      "${1:app} = { path = \"${2:src/main.fly}\" }",
+      "$0"
+    ]
+  },
+  "Binary target with name override": {
+    "prefix": "binn",
+    "scope": "flyp-toml",
+    "description": "[targets] binary entry with explicit output name",
+    "body": [
+      "[targets]",
+      "${1:app} = { name = \"${2:App}\", path = \"${3:src/main.fly}\" }",
       "$0"
     ]
   },
   "Library target": {
     "prefix": "lib",
     "scope": "flyp-toml",
-    "description": "[[lib]] target block",
+    "description": "[targets] library entry",
     "body": [
-      "[[lib]]",
-      "name = \"${1:mylib}\"",
-      "path = \"${2:src/lib.fly}\"",
-      "type = \"${3|static,dynamic,both|}\"",
+      "[targets]",
+      "${1:mylib} = { path = \"${2:src/lib.fly}\", lib = \"${3|static,dynamic,both|}\" }",
       "$0"
     ]
   },
-  "Test target": {
+  "Workspace root": {
+    "prefix": "workspace",
+    "scope": "flyp-toml",
+    "description": "[workspace] root manifest",
+    "body": [
+      "[workspace]",
+      "members = [\"${1:app}\", \"${2:libs/core}\"]",
+      "$0"
+    ]
+  },
+  "Path dependency": {
+    "prefix": "pathdep",
+    "scope": "flyp-toml",
+    "description": "Path dependency on a workspace member",
+    "body": [
+      "${1:core} = { path = \"${2:../libs/core}\" }$0"
+    ]
+  },
+  "Build hooks": {
+    "prefix": "hooks",
+    "scope": "flyp-toml",
+    "description": "[hooks] pre-build and post-build commands",
+    "body": [
+      "[hooks]",
+      "pre-build  = \"${1:python scripts/codegen.py}\"",
+      "post-build = \"${2:}\"",
+      "$0"
+    ]
+  },
+  "Test suites config": {
     "prefix": "test",
     "scope": "flyp-toml",
-    "description": "[[test]] target block",
+    "description": "[test] suite-based configuration",
     "body": [
-      "[[test]]",
-      "name = \"${1:unit}\"",
-      "path = \"${2:tests/unit.fly}\"",
+      "[test]",
+      "suites     = [\"${1:tests/**/*.fly}\"]",
+      "parallel   = ${2|false,true|}",
+      "timeout_ms = ${3:0}",
+      "fail_fast  = ${4|false,true|}",
       "$0"
+    ]
+  },
+  "Registry declaration": {
+    "prefix": "repo",
+    "scope": "flyp-toml",
+    "description": "[repo] registry aliases section",
+    "body": [
+      "[repo]",
+      "${1:local}  = \"${2:http://localhost:5000}\"",
+      "$0"
+    ]
+  },
+  "Registry dependency": {
+    "prefix": "regdep",
+    "scope": "flyp-toml",
+    "description": "Registry dependency with semver range (uses [repo] alias)",
+    "body": [
+      "${1:pkg-name} = { registry = \"${2:local}\", version = \"${3|^1.0.0,~1.0.0,>=1.0.0\\,<2.0.0,1.0.0,*|}\" }$0"
+    ]
+  },
+  "Registry dependency with name override": {
+    "prefix": "regdepn",
+    "scope": "flyp-toml",
+    "description": "Registry dependency with explicit package name and semver range",
+    "body": [
+      "${1:alias} = { registry = \"${2:local}\", name = \"${3:pkg-name}\", version = \"${4|^1.0.0,~1.0.0,>=1.0.0\\,<2.0.0,1.0.0|}\" }$0"
     ]
   },
   "Git dependency (tag)": {
@@ -99,22 +157,20 @@
   "Build profiles": {
     "prefix": "profile",
     "scope": "flyp-toml",
-    "description": "[profile.debug] and [profile.release] blocks",
+    "description": "[profiles] section with debug and release",
     "body": [
-      "[profile.debug]",
-      "opt-level  = 0",
-      "debug-info = true",
-      "assertions = true",
-      "lto        = false",
-      "strip      = false",
-      "",
-      "[profile.release]",
-      "opt-level  = 3",
-      "debug-info = false",
-      "assertions = false",
-      "lto        = ${1|false,true|}",
-      "strip      = ${2|false,true|}",
+      "[profiles]",
+      "debug   = { opt-level = 0, debug-info = true,  assertions = true,  lto = false, strip = false }",
+      "release = { opt-level = 3, debug-info = false, assertions = false, lto = ${1|false,true|}, strip = ${2|false,true|} }",
       "$0"
+    ]
+  },
+  "Custom profile": {
+    "prefix": "profilec",
+    "scope": "flyp-toml",
+    "description": "Custom profile entry inside [profiles]",
+    "body": [
+      "${1:ci} = { opt-level = ${2:2}, debug-info = ${3|true,false|}, assertions = ${4|false,true|}, lto = ${5|false,true|}, strip = ${6|false,true|} }$0"
     ]
   }
 }

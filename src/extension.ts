@@ -208,6 +208,30 @@ export function activate(context: vscode.ExtensionContext): void {
         flypTerminal.sendText(`cd "${projectDir.replace(/"/g, '\\"')}" && ${cmd}`);
     }
 
+    /** Returns ['--profile', name] if a non-empty profile is configured, else []. */
+    function profileArgs(): string[] {
+        const p = vscode.workspace.getConfiguration('fly').get<string>('flypProfile', '').trim();
+        return p ? ['--profile', p] : [];
+    }
+
+    /** Returns ['-j', N] if fly.flypJobs > 0, else []. */
+    function jobsArgs(): string[] {
+        const j = vscode.workspace.getConfiguration('fly').get<number>('flypJobs', 0);
+        return j > 0 ? ['-j', String(j)] : [];
+    }
+
+    /** Returns ['--offline'] if fly.flypOffline is true, else []. */
+    function offlineArgs(): string[] {
+        return vscode.workspace.getConfiguration('fly').get<boolean>('flypOffline', false)
+            ? ['--offline'] : [];
+    }
+
+    /** Returns ['--cross', triple] if fly.flypCrossTriple is non-empty, else []. */
+    function crossArgs(): string[] {
+        const t = vscode.workspace.getConfiguration('fly').get<string>('flypCrossTriple', '').trim();
+        return t ? ['--cross', t] : [];
+    }
+
     context.subscriptions.push(
         vscode.commands.registerCommand('fly.flypBuild', async () => {
             const projectDir = resolveFlyTomlDir();
@@ -218,8 +242,14 @@ export function activate(context: vscode.ExtensionContext): void {
             const flyp  = resolveFlypPath();
             const cfg   = vscode.workspace.getConfiguration('fly');
             const extra = cfg.get<string>('flypBuildArgs', '').trim();
-            const args  = extra ? ['build', ...extra.split(/\s+/)] : ['build'];
-            const cmd   = `cd "${projectDir.replace(/"/g, '\\"')}" && ${flyp} ${args.join(' ')}`;
+            const force = cfg.get<boolean>('flypForceRebuild', false);
+            const buildArgs = ['build', ...profileArgs(), ...jobsArgs(), ...offlineArgs(),
+                               ...crossArgs(), ...(extra ? extra.split(/\s+/) : [])];
+            // If force rebuild, prepend a clean for the active profile.
+            const cleanCmd = force
+                ? `${flyp} clean ${profileArgs().join(' ')} && `
+                : '';
+            const cmd = `cd "${projectDir.replace(/"/g, '\\"')}" && ${cleanCmd}${flyp} ${buildArgs.join(' ')}`;
 
             const task = new vscode.Task(
                 { type: 'fly', task: 'flyp-build' },
@@ -236,9 +266,109 @@ export function activate(context: vscode.ExtensionContext): void {
             };
             await vscode.tasks.executeTask(task);
         }),
-        vscode.commands.registerCommand('fly.flypRun',  () => runFlyp(['run'])),
-        vscode.commands.registerCommand('fly.flypTest', () => runFlyp(['test'])),
+        vscode.commands.registerCommand('fly.flypRun',  () => runFlyp(['run',  ...profileArgs(), ...offlineArgs()])),
+        vscode.commands.registerCommand('fly.flypTest', () => runFlyp(['test', ...profileArgs(), ...offlineArgs()])),
+        vscode.commands.registerCommand('fly.flypDeploy', async () => {
+            const cfg     = vscode.workspace.getConfiguration('fly');
+            const profile = cfg.get<string>('flypProfile', '').trim();
+            const token   = cfg.get<string>('flypToken',   '').trim();
+            const args    = [
+                'deploy',
+                ...(profile ? ['--registry', profile] : []),
+                ...(token   ? ['--token',    token]   : []),
+            ];
+            runFlyp(args);
+        }),
+        vscode.commands.registerCommand('fly.flypVendor', async () => {
+            const cfg     = vscode.workspace.getConfiguration('fly');
+            const profile = cfg.get<string>('flypProfile', '').trim();
+            const token   = cfg.get<string>('flypToken',   '').trim();
+            const args    = [
+                'vendor',
+                ...(profile ? ['--registry', profile] : []),
+                ...(token   ? ['--token',    token]   : []),
+            ];
+            runFlyp(args);
+        }),
+        vscode.commands.registerCommand('fly.flypToggleOffline', async () => {
+            const cfg     = vscode.workspace.getConfiguration('fly');
+            const current = cfg.get<boolean>('flypOffline', false);
+            await cfg.update('flypOffline', !current, vscode.ConfigurationTarget.Workspace);
+            vscode.window.showInformationMessage(
+                `Flyp offline mode ${!current ? 'enabled' : 'disabled'}.`
+            );
+        }),
+        vscode.commands.registerCommand('fly.flypClean', async () => {
+            const cfg     = vscode.workspace.getConfiguration('fly');
+            const profile = cfg.get<string>('flypProfile', '').trim();
+            const args    = profile ? ['clean', '--profile', profile] : ['clean'];
+            runFlyp(args);
+        }),
+        vscode.commands.registerCommand('fly.flypUpgrade', async () => {
+            // Ask whether to upgrade all or a specific package.
+            const choice = await vscode.window.showQuickPick(
+                [
+                    { label: 'Upgrade all',    description: 'Upgrade all tag-pinned git deps to the latest semver tag' },
+                    { label: 'Upgrade one…',   description: 'Choose a specific package to upgrade' },
+                    { label: 'Dry run',        description: 'Preview upgrades without writing changes' },
+                ],
+                { title: 'Flyp: Upgrade Dependencies', placeHolder: 'Select upgrade scope' },
+            );
+            if (!choice) return;
+
+            if (choice.label === 'Dry run') {
+                runFlyp(['upgrade', '--dry-run']);
+            } else if (choice.label === 'Upgrade one…') {
+                const name = await vscode.window.showInputBox({
+                    prompt: 'Dependency name to upgrade',
+                    placeHolder: 'e.g. fly-std',
+                });
+                if (!name) return;
+                runFlyp(['upgrade', name]);
+            } else {
+                runFlyp(['upgrade']);
+            }
+        }),
+        vscode.commands.registerCommand('fly.flypDoctor', () => runFlyp(['doctor'])),
         vscode.commands.registerCommand('fly.flypLock', () => runFlyp(['lock'])),
+        vscode.commands.registerCommand('fly.flypSelectProfile', async () => {
+            const current = vscode.workspace.getConfiguration('fly').get<string>('flypProfile', '') || 'debug';
+
+            // Try to read available profiles from fly.toml
+            const projectDir = resolveFlyTomlDir();
+            let profiles = ['debug', 'release'];
+            if (projectDir) {
+                try {
+                    const tomlText = require('fs').readFileSync(
+                        require('path').join(projectDir, 'fly.toml'), 'utf8'
+                    ) as string;
+                    const inProfiles = /^\[profiles\]/m.test(tomlText);
+                    if (inProfiles) {
+                        const found = [...tomlText.matchAll(/^([a-z][a-z0-9_-]*)\s*=\s*\{/gm)]
+                            .map(m => m[1])
+                            .filter(n => n !== 'debug' && n !== 'release');
+                        profiles = ['debug', 'release', ...found];
+                    }
+                } catch { /* ignore */ }
+            }
+
+            const items = profiles.map(p => ({
+                label:       p,
+                description: p === current ? '$(check) active' : undefined,
+            }));
+
+            const picked = await vscode.window.showQuickPick(items, {
+                title:       'Flyp: Select Build Profile',
+                placeHolder: 'Profile used by Flyp: Build / Run / Test',
+            });
+            if (!picked) return;
+
+            const value = picked.label === 'debug' ? '' : picked.label;
+            await vscode.workspace.getConfiguration('fly').update(
+                'flypProfile', value, vscode.ConfigurationTarget.Workspace,
+            );
+            vscode.window.showInformationMessage(`Flyp profile set to "${picked.label}".`);
+        }),
         // Used by CodeLens actions in fly.toml (Update / Remove dependency).
         vscode.commands.registerCommand('fly.flypRunCmd', (args: string[]) => runFlyp(args)),
         vscode.commands.registerCommand('fly.flypAdd',  async () => {

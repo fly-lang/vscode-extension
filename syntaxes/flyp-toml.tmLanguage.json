@@ -16,7 +16,7 @@
     },
 
     "array-table-header": {
-      "comment": "[[bin]], [[lib]], [[test]] — array-of-tables header",
+      "comment": "Generic TOML array-of-tables header [[...]] — not used by fly.toml but highlighted for error visibility",
       "match": "^\\s*(\\[\\[)\\s*([a-zA-Z_][\\w\\-.]*?)\\s*(\\]\\])",
       "captures": {
         "1": { "name": "punctuation.definition.table.array.begin.flyp-toml" },

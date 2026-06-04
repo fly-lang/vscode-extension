@@ -127,6 +127,7 @@
       {
         "command": "fly.flypBuild",
         "title": "Flyp: Build",
+        "description": "Build the project (incremental — only recompiles changed targets)",
         "category": "Fly",
         "icon": "$(play)"
       },
@@ -144,6 +145,46 @@
       {
         "command": "fly.flypAdd",
         "title": "Flyp: Add Dependency",
+        "category": "Fly"
+      },
+      {
+        "command": "fly.flypSelectProfile",
+        "title": "Flyp: Select Profile",
+        "category": "Fly"
+      },
+      {
+        "command": "fly.flypToggleOffline",
+        "title": "Flyp: Toggle Offline Mode",
+        "category": "Fly"
+      },
+      {
+        "command": "fly.flypDeploy",
+        "title": "Flyp: Deploy to Registry",
+        "description": "Package and upload the current project to the configured registry",
+        "category": "Fly"
+      },
+      {
+        "command": "fly.flypVendor",
+        "title": "Flyp: Vendor to Registry",
+        "description": "Push all locked git dependencies to a local registry",
+        "category": "Fly"
+      },
+      {
+        "command": "fly.flypClean",
+        "title": "Flyp: Clean",
+        "description": "Remove build artifacts and incremental build fingerprints, forcing a full rebuild on next build",
+        "category": "Fly"
+      },
+      {
+        "command": "fly.flypUpgrade",
+        "title": "Flyp: Upgrade Dependencies",
+        "description": "Upgrade tag-pinned git dependencies to the latest semver tag",
+        "category": "Fly"
+      },
+      {
+        "command": "fly.flypDoctor",
+        "title": "Flyp: Doctor",
+        "description": "Check compiler, manifest, lockfile, cache and registries",
         "category": "Fly"
       },
       {
@@ -327,10 +368,41 @@
           "default": "",
           "description": "Path to the flyp binary. Leave empty to auto-discover next to fly.compilerPath."
         },
+        "fly.flypProfile": {
+          "type": "string",
+          "default": "",
+          "description": "Build profile used by the Flyp: Build / Run / Test commands (e.g. \"release\", \"ci\"). Leave empty to use the default profile (debug). Equivalent to passing --profile <name>."
+        },
+        "fly.flypJobs": {
+          "type": "number",
+          "default": 0,
+          "minimum": 0,
+          "description": "Number of parallel compilation threads for Flyp: Build (-j N). 0 = auto-detect CPU cores. 1 = sequential. With a single target, all threads go to the fly compiler (LLVM internal parallelism); with multiple targets, flyp runs them concurrently."
+        },
+        "fly.flypOffline": {
+          "type": "boolean",
+          "default": false,
+          "description": "Run Flyp: Build / Run / Test without network access (--offline). Uses only the local dependency cache. Fails if any locked dependency is missing from cache."
+        },
+        "fly.flypForceRebuild": {
+          "type": "boolean",
+          "default": false,
+          "description": "Run flyp clean before every Flyp: Build, bypassing the incremental build cache. Equivalent to running Flyp: Clean then Flyp: Build manually."
+        },
+        "fly.flypCrossTriple": {
+          "type": "string",
+          "default": "",
+          "description": "Cross-compilation target triple for Flyp: Build (e.g. \"aarch64-linux-musl\", \"wasm32-wasi\"). Leave empty for native builds. Output goes to target/<profile>/<triple>/."
+        },
+        "fly.flypToken": {
+          "type": "string",
+          "default": "",
+          "description": "API key sent as 'Authorization: Bearer <token>' when running Flyp: Deploy or Flyp: Vendor. Leave empty if the registry has no authentication. Equivalent to passing --token or setting FLYP_TOKEN."
+        },
         "fly.flypBuildArgs": {
           "type": "string",
           "default": "",
-          "description": "Extra arguments appended to flyp build, e.g. \"--release\" or \"--target mybin\"."
+          "description": "Extra arguments appended to flyp build, e.g. \"--targets mybin,mylib\". Use fly.flypProfile to select a build profile."
         },
         "fly.debugBuildArgs": {
           "type": "string",
