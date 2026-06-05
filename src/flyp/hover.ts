@@ -9,8 +9,17 @@ const DOCS: Record<string, KeyDoc> = {
         doc:    'In `[package]`: the package name (REQUIRED). Must match `[a-z0-9_-]+`.\n\nIn `[targets]` inline tables: **optional** override for the output filename. If omitted, the TOML map key is used as the output name.',
     },
     version: {
-        detail: '(string) version — REQUIRED',
-        doc:    'Semantic version of this package: `MAJOR.MINOR.PATCH`. Example: `"0.1.0"`.',
+        detail: '(string) version',
+        doc:    'In `[package]`: the package version (REQUIRED). Semantic version `MAJOR.MINOR.PATCH`. Example: `"0.1.0"`.\n\n'
+              + 'In `[dependencies]`: version requirement for registry dependencies. flyp selects the highest available version that satisfies the range.\n\n'
+              + '| Syntax | Meaning |\n|---|---|\n'
+              + '| `"*"` | Any (latest) |\n'
+              + '| `"1.2.3"` | Exact |\n'
+              + '| `"^1.2.3"` | `>=1.2.3, <2.0.0` |\n'
+              + '| `"~1.2.3"` | `>=1.2.3, <1.3.0` |\n'
+              + '| `"~1.2"` | `>=1.2.0, <1.3.0` |\n'
+              + '| `">=1.0.0,<2.0.0"` | Explicit range (comma = AND) |\n'
+              + '| `"1.x"` | `>=1.0.0, <2.0.0` |',
     },
     description: {
         detail: '(string) description',
@@ -49,18 +58,6 @@ const DOCS: Record<string, KeyDoc> = {
     registry: {
         detail: '(string) registry',
         doc:    'Registry alias from `[repo]`. Makes this a registry dependency. Use instead of `git`.',
-    },
-    version: {
-        detail: '(string) version — semver range',
-        doc:    'Version requirement for registry dependencies. flyp selects the highest available version that satisfies the range.\n\n'
-              + '| Syntax | Meaning |\n|---|---|\n'
-              + '| `"*"` | Any (latest) |\n'
-              + '| `"1.2.3"` | Exact |\n'
-              + '| `"^1.2.3"` | `>=1.2.3, <2.0.0` |\n'
-              + '| `"~1.2.3"` | `>=1.2.3, <1.3.0` |\n'
-              + '| `"~1.2"` | `>=1.2.0, <1.3.0` |\n'
-              + '| `">=1.0.0,<2.0.0"` | Explicit range (comma = AND) |\n'
-              + '| `"1.x"` | `>=1.0.0, <2.0.0` |',
     },
     // [dependencies] inline keys — git deps
     git: {
