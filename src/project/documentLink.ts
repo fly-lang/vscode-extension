@@ -1,10 +1,9 @@
 import * as vscode from 'vscode';
 
-// Matches a git URL inside a double-quoted string value.
-// Captures: https://github.com/… or git@github.com:…
+// A git URL inside a double-quoted string value.
 const GIT_URL_RE = /"(https?:\/\/[^"]+|git@[^"]+)"/g;
 
-export class FlyTomlDocumentLinkProvider implements vscode.DocumentLinkProvider {
+export class ManifestDocumentLinkProvider implements vscode.DocumentLinkProvider {
     provideDocumentLinks(document: vscode.TextDocument): vscode.DocumentLink[] {
         const links: vscode.DocumentLink[] = [];
 
@@ -14,10 +13,10 @@ export class FlyTomlDocumentLinkProvider implements vscode.DocumentLinkProvider 
             GIT_URL_RE.lastIndex = 0;
             while ((m = GIT_URL_RE.exec(text)) !== null) {
                 const url = m[1];
-                // Only linkify https:// URLs (git@ SSH links can't open in browser directly).
+                // Only https:// URLs open in a browser; git@ SSH remotes cannot.
                 if (!url.startsWith('http')) continue;
 
-                // +1 / -1 to skip the surrounding quotes.
+                // +1 to skip the opening quote.
                 const start = new vscode.Position(i, m.index + 1);
                 const end   = new vscode.Position(i, m.index + 1 + url.length);
                 links.push(new vscode.DocumentLink(

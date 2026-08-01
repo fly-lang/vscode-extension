@@ -1,5 +1,5 @@
-import * as path   from 'path';
 import * as vscode from 'vscode';
+import { deriveLspPath } from '../compiler/finder';
 // Type-only import: erased at compile time, generates NO runtime require().
 // The actual module is loaded lazily inside startLspClient() so a missing
 // vscode-languageclient package never prevents the rest of the extension
@@ -19,8 +19,8 @@ function resolveLspPath(): string {
     if (explicit) return explicit;
 
     const compilerPath = cfg.get<string>('compilerPath', 'fly');
-    const dir = path.dirname(compilerPath);
-    return dir === '.' ? 'fly-lsp' : path.join(dir, 'fly-lsp');
+    // Shared helper: appends .exe on Windows and handles a bare "fly" path.
+    return deriveLspPath(compilerPath);
 }
 
 export function startLspClient(context: vscode.ExtensionContext): void {

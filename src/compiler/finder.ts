@@ -6,7 +6,7 @@ import * as path from 'path';
 export interface FlyInstallation {
     /** Absolute path to the fly binary. */
     path: string;
-    /** Version string, e.g. "0.12.4". */
+    /** Version string, e.g. "0.14.4". */
     version: string;
 }
 
@@ -15,18 +15,30 @@ export function detectVersion(flyPath: string): Promise<string | undefined> {
     return new Promise(resolve => {
         cp.execFile(flyPath, ['--version'], { timeout: 5_000 }, (_err, stdout, stderr) => {
             const out = (stdout + stderr).trim();
-            // "Fly version 0.12.4 (https://flylang.org)"
+            // "fly version 0.14.4 (https://flylang.org)"
             const m = out.match(/(\d+\.\d+\.\d+)/);
             resolve(m ? m[1] : undefined);
         });
     });
 }
 
+// Return the path of a tool shipped next to the fly binary (fly-lsp,
+// lldb-dap, …). A bare compilerPath ("fly") yields the bare tool name,
+// which resolves through PATH like the compiler itself.
+export function deriveSiblingTool(flyPath: string, tool: string): string {
+    const dir  = path.dirname(flyPath);
+    const name = os.platform() === 'win32' ? `${tool}.exe` : tool;
+    return dir === '.' ? name : path.join(dir, name);
+}
+
 // Return the sibling fly-lsp path for a given fly binary path.
 export function deriveLspPath(flyPath: string): string {
-    const dir = path.dirname(flyPath);
-    const lspName = os.platform() === 'win32' ? 'fly-lsp.exe' : 'fly-lsp';
-    return dir === '.' ? lspName : path.join(dir, lspName);
+    return deriveSiblingTool(flyPath, 'fly-lsp');
+}
+
+// Return the sibling lldb-dap path (the DAP server bundled with the toolchain).
+export function deriveDapPath(flyPath: string): string {
+    return deriveSiblingTool(flyPath, 'lldb-dap');
 }
 
 // Collect candidate binary paths from PATH + well-known install directories.

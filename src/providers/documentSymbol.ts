@@ -24,6 +24,11 @@ const PATTERNS: { re: RegExp; kind: vscode.SymbolKind; group: number }[] = [
         group: 1,
     },
     {
+        re: /^\s*suite\s+([a-zA-Z_]\w*)/,
+        kind: vscode.SymbolKind.Module,
+        group: 1,
+    },
+    {
         // Function: optional modifiers, optional return type(s), then name followed by '('
         // Captures the function name (last word before the opening paren)
         re: /^\s*(?:(?:public|private|protected|static|const)\s+)*(?:(?:[\w,.<>\[\]]+)\s+)?([a-zA-Z_]\w*)\s*(?:<[^>]*>)?\s*\([^)]*\)\s*(?:\{|$)/,
@@ -32,12 +37,16 @@ const PATTERNS: { re: RegExp; kind: vscode.SymbolKind; group: number }[] = [
     },
 ];
 
-// Keywords that should never be treated as function names
+// Keywords that should never be treated as function names — the compiler's
+// full reserved-word list (TokenKinds.fly) minus nothing, plus contextual 'out'.
 const SKIP_NAMES = new Set([
-    'if', 'elsif', 'else', 'for', 'while', 'switch', 'case', 'default',
-    'return', 'break', 'continue', 'fail', 'handle', 'new', 'delete',
-    'namespace', 'import', 'as', 'class', 'struct', 'interface', 'enum',
-    'public', 'private', 'protected', 'static', 'const', 'void',
+    'abstract', 'as', 'bool', 'break', 'byte', 'case', 'char', 'class',
+    'complex', 'const', 'continue', 'default', 'double', 'elsif', 'else',
+    'enum', 'error', 'fail', 'false', 'final', 'float', 'for', 'handle',
+    'if', 'import', 'in', 'int', 'interface', 'long', 'namespace', 'new',
+    'null', 'out', 'pointer', 'private', 'protected', 'public', 'return',
+    'short', 'static', 'string', 'struct', 'suite', 'switch', 'test',
+    'true', 'uint', 'ulong', 'unset', 'ushort', 'void', 'while',
 ]);
 
 export class FlyDocumentSymbolProvider implements vscode.DocumentSymbolProvider {
@@ -82,7 +91,8 @@ export class FlyDocumentSymbolProvider implements vscode.DocumentSymbolProvider 
                 if (kind === vscode.SymbolKind.Class ||
                     kind === vscode.SymbolKind.Struct ||
                     kind === vscode.SymbolKind.Interface ||
-                    kind === vscode.SymbolKind.Enum) {
+                    kind === vscode.SymbolKind.Enum ||
+                    kind === vscode.SymbolKind.Module) {
                     stack.push({ symbol: sym, indent });
                 }
 

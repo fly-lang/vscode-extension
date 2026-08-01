@@ -2,7 +2,7 @@
   "name": "fly-vscode-extension",
   "displayName": "Fly Programming Language",
   "description": "Fly programming language support for Visual Studio Code: syntax highlighting, snippets, and language configuration for .fly files.",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "publisher": "fly-lang",
   "icon": "fly_logo.png",
   "license": "Apache-2.0",
@@ -51,26 +51,21 @@
           {
             "id": "build-run",
             "title": "Build and run",
-            "description": "Press **Ctrl+F5** to compile and run, **Ctrl+Shift+B** to build only, or **F5** to launch the debugger (requires codelldb).",
+            "description": "Press **Ctrl+F5** to compile and run, **Ctrl+Shift+B** to build only, or **F5** to launch the debugger (uses the lldb-dap bundled with the Fly toolchain).",
             "media": { "markdown": "media/first-file.md" },
             "completionEvents": ["onCommand:fly.runFile", "onCommand:fly.buildFile"]
           },
           {
-            "id": "flyp",
-            "title": "Manage your project with flyp",
-            "description": "Open a `fly.toml` manifest to access package manager commands: **Flyp: Build**, **Flyp: Run**, **Flyp: Add Dependency**, and more.",
-            "media": { "markdown": "media/first-file.md" }
+            "id": "project",
+            "title": "Manage your project",
+            "description": "Run **Fly: Init Project** to scaffold a `Manifest.fly`, then use **Fly: Build Project**, **Fly: Run Project** and **Fly: Add Dependency**.",
+            "media": { "markdown": "media/first-file.md" },
+            "completionEvents": ["onCommand:fly.pkgInit", "onCommand:fly.pkgBuild"]
           }
         ]
       }
     ],
     "languages": [
-      {
-        "id": "flyp-toml",
-        "aliases": ["Fly Manifest", "flyp-toml"],
-        "filenames": ["fly.toml"],
-        "configuration": "./flyp-toml-language-configuration.json"
-      },
       {
         "id": "fly",
         "aliases": [
@@ -89,11 +84,6 @@
       }
     ],
     "grammars": [
-      {
-        "language": "flyp-toml",
-        "scopeName": "source.flyp-toml",
-        "path": "./syntaxes/flyp-toml.tmLanguage.json"
-      },
       {
         "language": "fly",
         "scopeName": "source.fly",
@@ -125,76 +115,66 @@
         "icon": "$(debug-alt)"
       },
       {
-        "command": "fly.flypBuild",
-        "title": "Flyp: Build",
+        "command": "fly.pkgInit",
+        "title": "Fly: Init Project",
+        "description": "Scaffold Manifest.fly and src/main.fly in the workspace root",
+        "category": "Fly"
+      },
+      {
+        "command": "fly.pkgBuild",
+        "title": "Fly: Build Project",
         "description": "Build the project (incremental — only recompiles changed targets)",
         "category": "Fly",
         "icon": "$(play)"
       },
       {
-        "command": "fly.flypRun",
-        "title": "Flyp: Run",
+        "command": "fly.pkgRun",
+        "title": "Fly: Run Project",
         "category": "Fly",
         "icon": "$(run-above)"
       },
       {
-        "command": "fly.flypTest",
-        "title": "Flyp: Test",
+        "command": "fly.pkgTest",
+        "title": "Fly: Test Project",
         "category": "Fly"
       },
       {
-        "command": "fly.flypAdd",
-        "title": "Flyp: Add Dependency",
+        "command": "fly.pkgAdd",
+        "title": "Fly: Add Dependency",
+        "description": "Add a git dependency to Manifest.fly and re-lock",
         "category": "Fly"
       },
       {
-        "command": "fly.flypSelectProfile",
-        "title": "Flyp: Select Profile",
+        "command": "fly.pkgRemove",
+        "title": "Fly: Remove Dependency",
+        "description": "Drop a dependency from Manifest.fly and re-lock",
         "category": "Fly"
       },
       {
-        "command": "fly.flypToggleOffline",
-        "title": "Flyp: Toggle Offline Mode",
+        "command": "fly.pkgWhy",
+        "title": "Fly: Why Is This Dependency Here?",
+        "description": "Explain why a package is in the dependency graph",
         "category": "Fly"
       },
       {
-        "command": "fly.flypDeploy",
-        "title": "Flyp: Deploy to Registry",
-        "description": "Package and upload the current project to the configured registry",
+        "command": "fly.pkgSelectProfile",
+        "title": "Fly: Select Profile",
         "category": "Fly"
       },
       {
-        "command": "fly.flypVendor",
-        "title": "Flyp: Vendor to Registry",
-        "description": "Push all locked git dependencies to a local registry",
+        "command": "fly.pkgClean",
+        "title": "Fly: Clean Project",
+        "description": "Remove the profile's output directory and its incremental fingerprints",
         "category": "Fly"
       },
       {
-        "command": "fly.flypClean",
-        "title": "Flyp: Clean",
-        "description": "Remove build artifacts and incremental build fingerprints, forcing a full rebuild on next build",
+        "command": "fly.pkgLock",
+        "title": "Fly: Lock (Update Lock.fly)",
         "category": "Fly"
       },
       {
-        "command": "fly.flypUpgrade",
-        "title": "Flyp: Upgrade Dependencies",
-        "description": "Upgrade tag-pinned git dependencies to the latest semver tag",
-        "category": "Fly"
-      },
-      {
-        "command": "fly.flypDoctor",
-        "title": "Flyp: Doctor",
-        "description": "Check compiler, manifest, lockfile, cache and registries",
-        "category": "Fly"
-      },
-      {
-        "command": "fly.flypLock",
-        "title": "Flyp: Lock (Update fly.lock)",
-        "category": "Fly"
-      },
-      {
-        "command": "fly.flypRunCmd",
-        "title": "Flyp: Run Command",
+        "command": "fly.pkgRunCmd",
+        "title": "Fly: Run Project Command",
         "category": "Fly"
       }
     ],
@@ -202,12 +182,12 @@
       {
         "command": "fly.buildFile",
         "key": "ctrl+shift+b",
-        "when": "editorLangId == fly"
+        "when": "editorLangId == fly && !(resourceFilename =~ /^[Mm]anifest\\.fly$/)"
       },
       {
         "command": "fly.buildFile",
         "key": "cmd+shift+b",
-        "when": "editorLangId == fly"
+        "when": "editorLangId == fly && !(resourceFilename =~ /^[Mm]anifest\\.fly$/)"
       },
       {
         "command": "fly.runFile",
@@ -225,41 +205,41 @@
         "when": "editorLangId == fly && !inDebugMode"
       },
       {
-        "command": "fly.flypBuild",
+        "command": "fly.pkgBuild",
         "key": "ctrl+shift+b",
-        "when": "resourceFilename == fly.toml"
+        "when": "resourceFilename =~ /^[Mm]anifest\\.fly$/"
       },
       {
-        "command": "fly.flypBuild",
+        "command": "fly.pkgBuild",
         "key": "cmd+shift+b",
-        "when": "resourceFilename == fly.toml"
+        "when": "resourceFilename =~ /^[Mm]anifest\\.fly$/"
       }
     ],
     "menus": {
       "editor/title/run": [
         {
           "command": "fly.debugFile",
-          "when": "resourceLangId == fly",
+          "when": "resourceLangId == fly && !(resourceFilename =~ /^[Mm]anifest\\.fly$/)",
           "group": "navigation@1"
         },
         {
           "command": "fly.runFile",
-          "when": "resourceLangId == fly",
+          "when": "resourceLangId == fly && !(resourceFilename =~ /^[Mm]anifest\\.fly$/)",
           "group": "navigation@2"
         },
         {
           "command": "fly.buildFile",
-          "when": "resourceLangId == fly",
+          "when": "resourceLangId == fly && !(resourceFilename =~ /^[Mm]anifest\\.fly$/)",
           "group": "navigation@3"
         },
         {
-          "command": "fly.flypBuild",
-          "when": "resourceFilename == fly.toml",
+          "command": "fly.pkgBuild",
+          "when": "resourceFilename =~ /^[Mm]anifest\\.fly$/",
           "group": "navigation@1"
         },
         {
-          "command": "fly.flypRun",
-          "when": "resourceFilename == fly.toml",
+          "command": "fly.pkgRun",
+          "when": "resourceFilename =~ /^[Mm]anifest\\.fly$/",
           "group": "navigation@2"
         }
       ]
@@ -272,9 +252,31 @@
         "type": "fly",
         "label": "Fly Debug",
         "languages": ["fly"],
+        "configurationAttributes": {
+          "launch": {
+            "required": ["program"],
+            "properties": {
+              "program": {
+                "type": "string",
+                "description": "Path to the executable to debug."
+              },
+              "args": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Command-line arguments passed to the program.",
+                "default": []
+              },
+              "cwd": {
+                "type": "string",
+                "description": "Working directory of the program.",
+                "default": "${workspaceFolder}"
+              }
+            }
+          }
+        },
         "initialConfigurations": [
           {
-            "type": "lldb",
+            "type": "fly",
             "request": "launch",
             "name": "Fly: Debug File",
             "program": "${fileDirname}/${fileBasenameNoExtension}",
@@ -285,9 +287,9 @@
         "configurationSnippets": [
           {
             "label": "Fly: Launch and debug current file",
-            "description": "Compile with --debug and launch under LLDB (requires the codelldb extension).",
+            "description": "Compile with --debug and launch under the lldb-dap bundled with the Fly toolchain.",
             "body": {
-              "type": "lldb",
+              "type": "fly",
               "request": "launch",
               "name": "Fly: Debug File",
               "program": "^\"\\${fileDirname}/\\${fileBasenameNoExtension}\"",
@@ -304,7 +306,7 @@
         "owner": "fly",
         "fileLocation": ["absolute"],
         "pattern": {
-          "regexp": "^fly: (.+?):(\\d+):(\\d+):\\s+(error|warning|note|remark):\\s+(.+)$",
+          "regexp": "^(.+?):(\\d+):(\\d+):\\s+(fatal error|error|warning|note|remark):\\s+(.+)$",
           "file": 1,
           "line": 2,
           "column": 3,
@@ -329,10 +331,6 @@
       {
         "language": "fly",
         "path": "./snippets/fly.code-snippets"
-      },
-      {
-        "language": "flyp-toml",
-        "path": "./snippets/flyp-toml.code-snippets"
       }
     ],
     "configuration": {
@@ -363,46 +361,25 @@
           "default": "",
           "description": "Extra arguments appended to the fly compiler when running 'Fly: Build File', e.g. \"-O2\" or \"-o bin/myapp\"."
         },
-        "fly.flypPath": {
+        "fly.projectProfile": {
           "type": "string",
+          "enum": ["", "release"],
+          "enumDescriptions": [
+            "debug — -O0, debug info, assertions on",
+            "release — -O3, no debug info, assertions off"
+          ],
           "default": "",
-          "description": "Path to the flyp binary. Leave empty to auto-discover next to fly.compilerPath."
+          "description": "Build profile used by the Fly: Build / Run / Test Project commands. Empty = debug. Only these two exist: the manifest reader does not consume the schema's 'profiles' field yet, so a custom profile name would change nothing."
         },
-        "fly.flypProfile": {
-          "type": "string",
-          "default": "",
-          "description": "Build profile used by the Flyp: Build / Run / Test commands (e.g. \"release\", \"ci\"). Leave empty to use the default profile (debug). Equivalent to passing --profile <name>."
-        },
-        "fly.flypJobs": {
-          "type": "number",
-          "default": 0,
-          "minimum": 0,
-          "description": "Number of parallel compilation threads for Flyp: Build (-j N). 0 = auto-detect CPU cores. 1 = sequential. With a single target, all threads go to the fly compiler (LLVM internal parallelism); with multiple targets, flyp runs them concurrently."
-        },
-        "fly.flypOffline": {
+        "fly.projectForceRebuild": {
           "type": "boolean",
           "default": false,
-          "description": "Run Flyp: Build / Run / Test without network access (--offline). Uses only the local dependency cache. Fails if any locked dependency is missing from cache."
+          "description": "Pass --force to Fly: Build Project, bypassing the per-target fingerprint cache so every target is recompiled."
         },
-        "fly.flypForceRebuild": {
-          "type": "boolean",
-          "default": false,
-          "description": "Run flyp clean before every Flyp: Build, bypassing the incremental build cache. Equivalent to running Flyp: Clean then Flyp: Build manually."
-        },
-        "fly.flypCrossTriple": {
+        "fly.projectBuildArgs": {
           "type": "string",
           "default": "",
-          "description": "Cross-compilation target triple for Flyp: Build (e.g. \"aarch64-linux-musl\", \"wasm32-wasi\"). Leave empty for native builds. Output goes to target/<profile>/<triple>/."
-        },
-        "fly.flypToken": {
-          "type": "string",
-          "default": "",
-          "description": "API key sent as 'Authorization: Bearer <token>' when running Flyp: Deploy or Flyp: Vendor. Leave empty if the registry has no authentication. Equivalent to passing --token or setting FLYP_TOKEN."
-        },
-        "fly.flypBuildArgs": {
-          "type": "string",
-          "default": "",
-          "description": "Extra arguments appended to flyp build, e.g. \"--targets mybin,mylib\". Use fly.flypProfile to select a build profile."
+          "description": "Extra arguments appended to 'fly build', e.g. \"--target mybin\". Use fly.projectProfile to select the profile."
         },
         "fly.debugBuildArgs": {
           "type": "string",

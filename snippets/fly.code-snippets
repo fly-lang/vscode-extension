@@ -236,7 +236,7 @@
   "Switch": {
     "prefix": "switch",
     "body": [
-      "switch (${1:expr}) {",
+      "switch ${1:expr} {",
       "\tcase ${2:value}:",
       "\t\t$0",
       "\t\tbreak",
@@ -267,34 +267,10 @@
     "description": "While loop"
   },
 
-  "New (heap class)": {
+  "New (class instance)": {
     "prefix": "new",
     "body": ["${1:Type} ${2:obj} = new ${1:Type}($3)"],
-    "description": "Heap-allocated class instance — call 'delete obj' when done"
-  },
-
-  "New unique": {
-    "prefix": "newu",
-    "body": ["${1:Type} ${2:obj} = new unique ${1:Type}($3)"],
-    "description": "Unique smart pointer — freed automatically at scope exit, not copyable"
-  },
-
-  "New shared": {
-    "prefix": "news",
-    "body": ["${1:Type} ${2:obj} = new shared ${1:Type}($3)"],
-    "description": "Shared smart pointer — reference-counted, freed when last reference exits scope"
-  },
-
-  "New weak": {
-    "prefix": "neww",
-    "body": ["${1:Type} ${2:obj} = new weak ${1:Type}($3)"],
-    "description": "Weak smart pointer — no refcount, first scope exit frees; use carefully"
-  },
-
-  "Delete": {
-    "prefix": "del",
-    "body": ["delete ${1:obj}"],
-    "description": "Free a heap-allocated class instance (created with plain 'new')"
+    "description": "Class instance — heap-allocated, released automatically at scope exit unless ownership escapes"
   },
 
   "Out (return value)": {
@@ -328,26 +304,26 @@
       "\t$0",
       "}"
     ],
-    "description": "Handle block — errors are silently swallowed"
+    "description": "Handle block — guards the statements inside; binds the implicit 'error' variable"
   },
 
-  "Handle with error capture": {
+  "Handle with error check": {
     "prefix": "errhandle",
     "body": [
-      "error ${1:err} handle {",
+      "handle {",
       "\t$0",
       "}",
-      "if (${1:err}) {",
+      "if error {",
       "\t",
       "}"
     ],
-    "description": "Handle block with named error variable — check 'err' after the block"
+    "description": "Handle block followed by a check of the implicit 'error' variable"
   },
 
-  "Handle single statement": {
+  "Handle single call": {
     "prefix": "errh",
-    "body": ["error ${1:err} handle ${2:operation()}"],
-    "description": "Handle a single call with error capture"
+    "body": ["handle { ${1:operation()} }"],
+    "description": "Guard a single call — check 'if error' afterwards"
   },
 
   "Line comment": {
@@ -374,8 +350,8 @@
 
   "Array declaration": {
     "prefix": "arr",
-    "body": ["${1:int}[] ${2:arr} = new ${1:int}[${3:n}]"],
-    "description": "Array declaration and allocation"
+    "body": ["${1:int}[] ${2:arr} = { ${3:1, 2, 3} }"],
+    "description": "Array declaration with a literal — iterate with 'for x in arr'; no indexing or .length"
   },
 
   "Generic list": {
@@ -385,7 +361,7 @@
   },
 
   "Interface with method": {
-    "prefix": "iface",
+    "prefix": "ifacem",
     "body": [
       "public interface ${1:IName} {",
       "\t${2:void} ${3:method}(${4})",

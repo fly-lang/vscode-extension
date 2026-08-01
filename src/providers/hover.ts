@@ -19,33 +19,17 @@ const KEYWORD_DOCS: Record<string, HoverEntry> = {
     },
     handle: {
         detail: '(keyword) handle',
-        doc: 'Guards a block or single statement against errors. Three forms:\n\n```fly\n// 1. Silent — swallows all errors\nhandle { riskyOp() }\n\n// 2. Named — inspect after the block\nerror err handle { riskyOp() }\nif (err) { /* handle */ }\n\n// 3. Single-statement shorthand\nerror err handle riskyOp()\n```\n\nA `fail` fired **directly** inside the handle body jumps to the safe block. A `fail` fired in a *callee* writes to the error struct but the handle body continues.',
+        doc: 'Guards the statements of its block against errors and binds the **implicit `error` variable** — a named error variable cannot be attached.\n\n```fly\nhandle {\n    riskyOp()\n}\nif error { /* inspect the failure */ }\n```\n\nA `fail` fired **directly** inside the handle body jumps out of the block. A `fail` fired in a *callee* writes to the error value and the handle body continues.',
     },
     error: {
         detail: '(type) error',
-        doc: 'Built-in error type. Holds an integer code, a string message, and an optional object payload. Test with `if (err)` — a zero code means no error.\n\n```fly\nerror err\nif (err) { /* error occurred */ }\n```',
+        doc: 'Built-in error type. Holds an integer code, a string message, and an optional object payload. A `handle` block binds the implicit `error` variable; test it with `if error` — a zero code means no error.\n\n```fly\nhandle { riskyOp() }\nif error { /* error occurred */ }\n```',
     },
 
     // Allocation
     new: {
         detail: '(keyword) new',
-        doc: 'Allocates an object. Without a qualifier the storage depends on the type:\n- **struct** → stack (`alloca`), freed at scope exit, no `delete` needed\n- **class** → heap (`malloc`), programmer must call `delete`\n\nWith a smart-pointer qualifier the object is always on the heap:\n\n```fly\nT x = new unique T()  // freed at scope exit, not copyable\nT x = new shared T()  // reference-counted\nT x = new weak T()    // no refcount — use carefully\n```',
-    },
-    unique: {
-        detail: '(qualifier) unique',
-        doc: '`new unique T()` — heap-allocates `T` with exclusive ownership. The object is freed automatically when the variable goes out of scope. Copying a `unique` variable is a compile-time error.',
-    },
-    shared: {
-        detail: '(qualifier) shared',
-        doc: '`new shared T()` — heap-allocates `T` with reference-counting. The runtime stores an 8-byte refcount before the object data. Copies increment the counter; each scope exit decrements it. The memory is freed when the count reaches zero.',
-    },
-    weak: {
-        detail: '(qualifier) weak',
-        doc: '`new weak T()` — heap-allocates `T` with no reference counting. Every holder calls `free()` at its own scope exit. Use only when the lifetime is unambiguous; the first exit frees the memory and any remaining holders become dangling pointers.',
-    },
-    delete: {
-        detail: '(keyword) delete',
-        doc: 'Frees a heap-allocated class instance created with a plain `new` (without smart-pointer qualifier).\n\n```fly\nNode n = new Node()\n// …use n…\ndelete n\n```\n\nDo **not** call `delete` on stack-allocated structs or on smart-pointer objects.',
+        doc: 'Allocates an object. The storage depends on the type:\n- **struct** → stack (`alloca`), freed at scope exit\n- **class** → heap (`malloc`), released automatically at scope exit unless ownership escapes (assigned away, passed to a call, or returned)\n\n```fly\nPoint p = new Point(1, 2)   // struct: stack\nNode  n = new Node()        // class: heap, auto-released\n```\n\nThere is no `delete` and no smart-pointer qualifiers — lifetime is managed by the compiler.',
     },
 
     // Import
@@ -65,11 +49,11 @@ const KEYWORD_DOCS: Record<string, HoverEntry> = {
     },
     test: {
         detail: '(keyword) test',
-        doc: 'Inline test block — written directly inside a production function to observe its local state read-only.\n\n```fly\nstring classify(const int n) {\n    if n > 0 {\n        out = "positive"\n        test {\n            assertTrue(out == "positive")\n        }\n    }\n}\n```\n\nIn **release** builds the block is completely stripped — zero IR, zero overhead.\nIn **test** mode (`fly --test`, triggered by `flyp test`) it executes only when an active suite is running. Writing to outer-scope variables is a compile error.',
+        doc: 'Inline test block — written directly inside a production function to observe its local state read-only.\n\n```fly\nstring classify(const int n) {\n    if n > 0 {\n        out = "positive"\n        test {\n            assertTrue(out == "positive")\n        }\n    }\n}\n```\n\nIn **release** builds the block is completely stripped — zero IR, zero overhead.\nIn **test** mode (`fly --test`, or `fly test` in a project) it executes only when an active suite is running. Writing to outer-scope variables is a compile error.',
     },
     case: {
         detail: '(keyword) case',
-        doc: 'Two uses:\n\n**1. Switch dispatch** — matches a value and jumps to the matching block:\n```fly\nswitch (x) {\n    case 1: doA() break\n    default: doB()\n}\n```\n\n**2. Suite test step** — named sequential execution inside a test-method:\n```fly\nvoid classifyTest() {\n    case "positive": classify(5)\n    case "negative": classify(-3)\n}\n```\nAll cases execute in order (no break, no dispatch). Each case has its own isolated error handler — an assertion failure in one case does not abort the others.',
+        doc: 'Two uses:\n\n**1. Switch dispatch** — matches a value and jumps to the matching block:\n```fly\nswitch x {\n    case 1: doA() break\n    default: doB()\n}\n```\n\n**2. Suite test step** — named sequential execution inside a test-method:\n```fly\nvoid classifyTest() {\n    case "positive": classify(5)\n    case "negative": classify(-3)\n}\n```\nAll cases execute in order (no break, no dispatch). Each case has its own isolated error handler — an assertion failure in one case does not abort the others.',
     },
 
     // Built-in types
@@ -83,8 +67,10 @@ const KEYWORD_DOCS: Record<string, HoverEntry> = {
     ulong:  { detail: '(type) ulong',  doc: 'Unsigned 64-bit integer. Range: 0–18 446 744 073 709 551 615.' },
     float:  { detail: '(type) float',  doc: 'Single-precision 32-bit floating-point number (IEEE 754).' },
     double: { detail: '(type) double', doc: 'Double-precision 64-bit floating-point number (IEEE 754).' },
-    string: { detail: '(type) string', doc: 'String type. Represented internally as a pointer to a null-terminated byte array.' },
+    string: { detail: '(type) string', doc: 'String type. Represented internally as a pointer to a null-terminated byte array. Literals keep escapes **raw**: `"\\n"` is a backslash followed by `n`, not a newline.' },
     char:   { detail: '(type) char',   doc: 'Character type. Single ASCII/UTF-8 byte.' },
+    pointer: { detail: '(type) pointer', doc: 'Opaque machine address. Use `pointer` for raw addresses and OS/runtime handles — never `long`; there is no numeric cast between pointers and integers.' },
+    complex: { detail: '(type) complex', doc: 'Complex number type (real and imaginary floating-point parts).' },
     void:   { detail: '(type) void',   doc: 'Void return type. Functions without a return type declaration are implicitly void.' },
 };
 

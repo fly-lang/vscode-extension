@@ -33,10 +33,15 @@ interface NamespaceEntry {
 type StdlibDb = Record<string, NamespaceEntry>;
 
 function loadDb(extensionPath: string): StdlibDb {
-    const dbPath = path.join(extensionPath, 'src', 'stdlib-completions.json');
+    // data/ is included in the packaged .vsix (src/ is not). Regenerate with
+    // scripts/gen-stdlib-completions.js against the fly_0.14.x std sources.
+    const dbPath = path.join(extensionPath, 'data', 'stdlib-completions.json');
     try {
         return JSON.parse(fs.readFileSync(dbPath, 'utf8')) as StdlibDb;
-    } catch {
+    } catch (e) {
+        console.error(`Fly: cannot load stdlib completions from ${dbPath}:`, e);
+        void vscode.window.showWarningMessage(
+            'Fly: stdlib completion database not found — std completions disabled.');
         return {};
     }
 }

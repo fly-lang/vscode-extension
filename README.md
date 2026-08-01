@@ -18,8 +18,8 @@ Full language support for the [Fly programming language](https://flylang.org) in
 - **File icons** for dark and light themes
 - **Auto-closing** brackets and parentheses
 - **Smart folding** — AST-aware folding for function and class bodies, plus manual `// #region` / `// #endregion` markers
-- **Built-in snippets** — 44+ snippets covering namespaces, functions, classes, interfaces, suites, test blocks, control flow, memory management, error handling, and common patterns (`field`, `arr`, `getset`, `list`, `iface`, …)
-- **Onboarding walkthrough** — **Help → Get Started → "Get Started with Fly"** guides you through compiler setup, first program, build/run, and flyp project management
+- **Built-in snippets** — 40+ snippets covering namespaces, functions, classes, interfaces, suites, test blocks, control flow, allocation, error handling, and common patterns (`field`, `arr`, `getset`, `list`, `iface`, …)
+- **Onboarding walkthrough** — **Help → Get Started → "Get Started with Fly"** guides you through compiler setup, first program, build/run, and project management
 
 ### Testing
 
@@ -43,7 +43,8 @@ Fly's test system is intrinsic to the language — tests live inside production 
 - **Inlay Hints** — parameter names shown inline at each call site
 - **Workspace Symbols** (`Ctrl+T`) — fuzzy-search functions and classes across all compiled files
 - **Document Symbols** — outline panel and breadcrumbs for the current file
-- **Selection ranges** (`Alt+Shift+→`) — expand selection from token → expression → statement → block → function → class
+- **Folding ranges** — fold functions, classes and blocks by their real extent rather than by indentation
+- **Semantic tokens** — highlighting driven by what a name *resolves to*, not by the grammar alone
 
 ### Diagnostics
 - **Live diagnostics** — compiler errors and warnings shown inline on save via the `$fly` problem matcher
@@ -52,20 +53,20 @@ Fly's test system is intrinsic to the language — tests live inside production 
 ### Build, run & debug
 - **Build** (`Ctrl+Shift+B`) — compile the current file; errors appear in the **Problems** panel
 - **Run** (`Ctrl+F5`) — compile and execute in the integrated terminal
-- **Debug** (`F5`) — compile with DWARF symbols and launch under LLDB (requires [codelldb](https://marketplace.visualstudio.com/items?itemName=vadimcn.vscode-lldb))
-- Breakpoints in `.fly` files are respected by the debugger
+- **Debug** (`F5`) — compile with `--debug` and launch under the **lldb-dap bundled with the Fly toolchain** (`bin/lldb-dap`, next to `fly`) — no third-party debugger extension needed
+- Breakpoints in `.fly` files are respected by the debugger. Note: the self-host compiler does not emit full DWARF for user programs yet, so source-level stepping is limited.
 
-### Package manager (`flyp`)
-- **fly.toml** manifest support — context-aware completions, hover docs, and inline validation
-- **flyp build / run / test / add / lock** commands available from the Command Palette and the editor title bar
+### Projects (`Manifest.fly`)
+- **Manifest support** — field completions, hover docs for every manifest field, git-URL links, and CodeLens actions on each dependency
+- **`fly init / build / run / test / add / remove / why / lock / clean`** from the Command Palette and the editor title bar
+- The manifest is **Fly source**, not TOML — a class extending `fly.meta.Manifest` — so it gets the same highlighting and language-server support as the rest of your code
 
 ---
 
 ## Requirements
 
 - Visual Studio Code `^1.82.0`
-- [Fly compiler](https://github.com/fly-lang/fly) (`fly` and `fly-lsp` on `PATH`, or configured via settings)
-- [codelldb](https://marketplace.visualstudio.com/items?itemName=vadimcn.vscode-lldb) — required for **Fly: Debug File** (`F5`)
+- [Fly compiler](https://github.com/fly-lang/fly) (`fly` and `fly-lsp` on `PATH`, or configured via settings — a release archive ships both in the same `bin/`, together with `lldb-dap` used for debugging)
 
 ## Installation
 
@@ -78,7 +79,7 @@ Search for **Fly Programming Language** in the Extensions panel (`Ctrl+Shift+X`)
 Download the latest `.vsix` from [GitHub Releases](https://github.com/fly-lang/vscode-extension/releases), then run:
 
 ```bash
-code --install-extension vscode-fly-<version>.vsix
+code --install-extension fly-vscode-extension-<version>.vsix
 ```
 
 or drag and drop the file into the Extensions panel.
@@ -90,7 +91,7 @@ git clone https://github.com/fly-lang/vscode-extension.git
 cd vscode-extension
 npm install
 npm run compile
-npm run package        # produces vscode-fly-<version>.vsix
+npm run package        # produces fly-vscode-extension-<version>.vsix
 ```
 
 To run in development mode, open the folder in VS Code and press **F5**. This compiles the extension and launches an Extension Development Host window.
@@ -106,8 +107,9 @@ To run in development mode, open the folder in VS Code and press **F5**. This co
 | `fly.enableWorkspaceDiagnostics` | `true` | Scan all `.fly` files in the workspace at startup |
 | `fly.buildArgs` | _(empty)_ | Extra flags appended to `fly` when running **Fly: Build File** |
 | `fly.debugBuildArgs` | `--debug` | Compiler flags used by **Fly: Debug File** |
-| `fly.flypPath` | _(auto)_ | Path to `flyp`; auto-discovered next to `fly.compilerPath` |
-| `fly.flypBuildArgs` | _(empty)_ | Extra flags appended to `flyp build` |
+| `fly.projectProfile` | _(empty = debug)_ | Profile for the project commands: empty or `release` |
+| `fly.projectForceRebuild` | `false` | Pass `--force` to **Fly: Build Project**, bypassing the fingerprint cache |
+| `fly.projectBuildArgs` | _(empty)_ | Extra flags appended to `fly build`, e.g. `--target mybin` |
 
 Use **Fly: Select Compiler** from the Command Palette to pick the compiler interactively — the extension auto-discovers all Fly installations and updates `fly.lspPath` automatically.
 
@@ -115,7 +117,7 @@ The status bar shows two items when a `.fly` file is active: `$(tools) fly X.Y.Z
 
 ## Commands
 
-Open the Command Palette with `Ctrl+Shift+P` (`Cmd+Shift+P` on macOS) and type **Fly** or **Flyp** to filter.
+Open the Command Palette with `Ctrl+Shift+P` (`Cmd+Shift+P` on macOS) and type **Fly** to filter.
 
 ### Compiler commands — active on `.fly` files
 
@@ -124,21 +126,36 @@ Open the Command Palette with `Ctrl+Shift+P` (`Cmd+Shift+P` on macOS) and type *
 | **Fly: Select Compiler** | — | Open a quick-pick to choose the active Fly installation. Auto-fills `fly.lspPath` from the same directory. |
 | **Fly: Build File** | `Ctrl+Shift+B` | Compile the current `.fly` file. Errors appear in the **Problems** panel via the `$fly` problem matcher. |
 | **Fly: Run File** | `Ctrl+F5` | Compile and immediately run the current `.fly` file in the integrated terminal. Uses `&&` — the program is not launched if compilation fails. |
-| **Fly: Debug File** | `F5` | Compile with DWARF debug symbols and launch the program under LLDB. Requires [codelldb](https://marketplace.visualstudio.com/items?itemName=vadimcn.vscode-lldb). Breakpoints in `.fly` files are respected. |
+| **Fly: Debug File** | `F5` | Compile with `--debug` and launch the program under the toolchain's bundled `lldb-dap`. Breakpoints in `.fly` files are respected. |
 
 The **Debug** `$(debug-alt)`, **Run** `$(run)`, and **Build** `$(play)` buttons appear in the editor title bar whenever a `.fly` file is active.
 
-### Package manager commands — active on `fly.toml`
+### Project commands — active in a project with a `Manifest.fly`
+
+Every command runs in the directory holding the manifest, which is found by
+walking up from the active file.
 
 | Command | Shortcut | Description |
 |---|---|---|
-| **Flyp: Build** | `Ctrl+Shift+B` | Run `flyp build` in the project root. Errors appear in the **Problems** panel. |
-| **Flyp: Run** | — | Run `flyp run` in the project root. |
-| **Flyp: Test** | — | Run `flyp test` in the project root. |
-| **Flyp: Add Dependency** | — | Interactive wizard: prompts for the package name, git URL, and ref type (`tag` / `branch` / `rev`), then runs `flyp add`. |
-| **Flyp: Lock (Update fly.lock)** | — | Run `flyp lock` to re-resolve all dependencies and regenerate `fly.lock`. |
+| **Fly: Init Project** | — | Run `fly init` to scaffold `Manifest.fly` and `src/main.fly`. |
+| **Fly: Build Project** | `Ctrl+Shift+B` | Run `fly build`. Errors appear in the **Problems** panel. Only changed targets are recompiled. |
+| **Fly: Run Project** | — | Run `fly run`. |
+| **Fly: Test Project** | — | Run `fly test` — builds and runs the project's `*Suite.fly` files. |
+| **Fly: Add Dependency** | — | Interactive: package name, git URL, ref type (`tag` / `branch` / `rev`), and whether it is a dev-dependency; then `fly add`, which also re-locks. |
+| **Fly: Remove Dependency** | — | Run `fly remove <name>` and re-lock. |
+| **Fly: Why Is This Dependency Here?** | — | Run `fly why <name>` to explain a package's presence in the graph. |
+| **Fly: Select Profile** | — | Choose `debug` or `release` for the commands above. |
+| **Fly: Clean Project** | — | Run `fly clean` for the active profile. |
+| **Fly: Lock (Update Lock.fly)** | — | Run `fly lock` to re-resolve dependencies and regenerate `Lock.fly`. |
 
-The **Run** `$(run-above)` and **Build** `$(play)` buttons appear in the editor title bar when `fly.toml` is open.
+The **Run** `$(run-above)` and **Build** `$(play)` buttons appear in the editor title bar when `Manifest.fly` is open.
+
+Each dependency in the manifest also carries **Why** and **Remove** CodeLens actions, and the `dependencies` declaration carries **Add Dependency**.
+
+> `fly add` writes a **git** dependency: the driver requires exactly one of
+> `--tag` / `--branch` / `--rev` and takes no version, so registry dependencies
+> are added by editing `dependencies` in the manifest (completions offer the
+> shape) and running **Fly: Lock**.
 
 ## Keyboard Shortcuts
 
@@ -147,7 +164,7 @@ The **Run** `$(run-above)` and **Build** `$(play)` buttons appear in the editor 
 | `Ctrl+Shift+B` / `Cmd+Shift+B` | **Fly: Build File** | `.fly` file active |
 | `Ctrl+F5` / `Cmd+F5` | **Fly: Run File** | `.fly` file active |
 | `F5` | **Fly: Debug File** | `.fly` file active, not already in debug |
-| `Ctrl+Shift+B` / `Cmd+Shift+B` | **Flyp: Build** | `fly.toml` active |
+| `Ctrl+Shift+B` / `Cmd+Shift+B` | **Fly: Build Project** | `Manifest.fly` active |
 | `F12` | Go to Definition | `.fly` file |
 | `Shift+F12` | Find References | `.fly` file |
 | `Alt+Shift+→` | Expand Selection | `.fly` file |
@@ -166,9 +183,9 @@ The extension cannot find the `fly-lsp` binary next to the Fly compiler. Options
 
 `fly` is not on `PATH` or the configured `fly.compilerPath` is wrong. Run **Fly: Select Compiler** to search installed Fly versions automatically.
 
-### Debug (`F5`) does nothing or shows "extension not found"
+### Debug (`F5`) shows "lldb-dap not found"
 
-The [codelldb](https://marketplace.visualstudio.com/items?itemName=vadimcn.vscode-lldb) extension is required for debugging. Install it from the VS Code Marketplace and reload VS Code.
+Debugging uses the `lldb-dap` binary shipped with the Fly toolchain, expected next to the `fly` binary. Check that `fly.compilerPath` points into a full toolchain installation (`bin/` containing `fly`, `fly-lsp`, `lldb-dap`), or run **Fly: Select Compiler**.
 
 ### Diagnostics appear only for open files
 
@@ -193,14 +210,23 @@ Open the folder in VS Code and press **F5**. This compiles the TypeScript and la
 
 ### Building the `fly-lsp` language server
 
-The language server is part of the [Fly compiler repository](https://github.com/fly-lang/fly). To build it:
+There is no separate build step and no CMake target for it: `fly-lsp` is written
+in Fly and compiled by the Fly toolchain itself, so it comes out of the ordinary
+toolchain build. From a checkout of the [Fly compiler
+repository](https://github.com/fly-lang/fly), branch `release/0.14.X`:
 
 ```bash
-cmake -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo
-cmake --build build --target fly-lsp
+./ci/linux/stage0.sh && ./ci/linux/stage1.sh && ./ci/linux/stage2.sh
 ```
 
-Then set `fly.lspPath` in your VS Code settings to `<build-dir>/bin/fly-lsp`.
+On Windows, the same three scripts under `ci/windows/` (`stage0.ps1`,
+`stage1.ps1`, `stage2.ps1`), run with **pwsh 7**.
+
+The binaries land side by side in `build/stage2/bin/` — `fly`, `fly-lsp`,
+`fly-registry` and the debugger (`lldb`, `lldb-dap`) — which is exactly the
+layout of a release archive. So once `fly.compilerPath` points at a `fly`, the
+extension finds `fly-lsp` and `lldb-dap` next to it and `fly.lspPath` can stay
+empty.
 
 ### Reporting issues
 

@@ -1,0 +1,3738 @@
+{
+  "fly.assert": {
+    "functions": [
+      {
+        "name": "errExit",
+        "returnType": "void",
+        "params": "const int code",
+        "signature": "errExit(const int code)"
+      },
+      {
+        "name": "assertEqI",
+        "returnType": "void",
+        "params": "const int got, const int exp, const int code",
+        "signature": "assertEqI(const int got, const int exp, const int code)"
+      },
+      {
+        "name": "assertEqL",
+        "returnType": "void",
+        "params": "const long got, const long exp, const int code",
+        "signature": "assertEqL(const long got, const long exp, const int code)"
+      },
+      {
+        "name": "assertStr",
+        "returnType": "void",
+        "params": "const string got, const string exp, const int code",
+        "signature": "assertStr(const string got, const string exp, const int code)"
+      },
+      {
+        "name": "assertNotEmpty",
+        "returnType": "void",
+        "params": "const string s, const int code",
+        "signature": "assertNotEmpty(const string s, const int code)"
+      },
+      {
+        "name": "assertTrue",
+        "returnType": "void",
+        "params": "const bool b, const int code",
+        "signature": "assertTrue(const bool b, const int code)"
+      },
+      {
+        "name": "assertFalse",
+        "returnType": "void",
+        "params": "const bool b, const int code",
+        "signature": "assertFalse(const bool b, const int code)"
+      },
+      {
+        "name": "assertGtI",
+        "returnType": "void",
+        "params": "const int got, const int threshold, const int code",
+        "signature": "assertGtI(const int got, const int threshold, const int code)"
+      },
+      {
+        "name": "assertNeI",
+        "returnType": "void",
+        "params": "const int got, const int notExp, const int code",
+        "signature": "assertNeI(const int got, const int notExp, const int code)"
+      },
+      {
+        "name": "assertNeL",
+        "returnType": "void",
+        "params": "const long got, const long notExp, const int code",
+        "signature": "assertNeL(const long got, const long notExp, const int code)"
+      },
+      {
+        "name": "assertEqP",
+        "returnType": "void",
+        "params": "const pointer got, const pointer exp, const int code",
+        "signature": "assertEqP(const pointer got, const pointer exp, const int code)"
+      },
+      {
+        "name": "assertNeP",
+        "returnType": "void",
+        "params": "const pointer got, const pointer notExp, const int code",
+        "signature": "assertNeP(const pointer got, const pointer notExp, const int code)"
+      },
+      {
+        "name": "assertNull",
+        "returnType": "void",
+        "params": "const pointer p, const int code",
+        "signature": "assertNull(const pointer p, const int code)"
+      },
+      {
+        "name": "assertNotNull",
+        "returnType": "void",
+        "params": "const pointer p, const int code",
+        "signature": "assertNotNull(const pointer p, const int code)"
+      },
+      {
+        "name": "assertStrNe",
+        "returnType": "void",
+        "params": "const string got, const string notExp, const int code",
+        "signature": "assertStrNe(const string got, const string notExp, const int code)"
+      },
+      {
+        "name": "assertEmpty",
+        "returnType": "void",
+        "params": "const string s, const int code",
+        "signature": "assertEmpty(const string s, const int code)"
+      },
+      {
+        "name": "assertApprox",
+        "returnType": "void",
+        "params": "const double got, const double exp, const int code",
+        "signature": "assertApprox(const double got, const double exp, const int code)"
+      },
+      {
+        "name": "assertApproxEps",
+        "returnType": "void",
+        "params": "const double got, const double exp, const double eps, const int code",
+        "signature": "assertApproxEps(const double got, const double exp, const double eps, const int code)"
+      }
+    ],
+    "classes": [],
+    "structs": []
+  },
+  "fly.bridge": {
+    "functions": [],
+    "classes": [
+      {
+        "name": "CLang",
+        "methods": [
+          {
+            "name": "CLang",
+            "params": "const string libPath"
+          },
+          {
+            "name": "call",
+            "params": "string sym, const Args args"
+          },
+          {
+            "name": "call",
+            "params": "string sym, const Args args, int out"
+          },
+          {
+            "name": "call",
+            "params": "string sym, const Args args, long out"
+          },
+          {
+            "name": "call",
+            "params": "string sym, const Args args, float out"
+          },
+          {
+            "name": "call",
+            "params": "string sym, const Args args, double out"
+          },
+          {
+            "name": "call",
+            "params": "string sym, const Args args, bool out"
+          },
+          {
+            "name": "call",
+            "params": "string sym, const Args args, pointer out"
+          }
+        ]
+      }
+    ],
+    "structs": [
+      {
+        "name": "Args",
+        "fields": []
+      }
+    ]
+  },
+  "fly.codec": {
+    "functions": [
+      {
+        "name": "base64Encode",
+        "returnType": "string",
+        "params": "const string s",
+        "signature": "base64Encode(const string s)"
+      },
+      {
+        "name": "base64Decode",
+        "returnType": "string",
+        "params": "const string s, int errOut",
+        "signature": "base64Decode(const string s, int errOut)"
+      },
+      {
+        "name": "base64UrlEncode",
+        "returnType": "string",
+        "params": "const string s",
+        "signature": "base64UrlEncode(const string s)"
+      },
+      {
+        "name": "base64UrlDecode",
+        "returnType": "string",
+        "params": "const string s, int errOut",
+        "signature": "base64UrlDecode(const string s, int errOut)"
+      },
+      {
+        "name": "percentEncode",
+        "returnType": "string",
+        "params": "const string s",
+        "signature": "percentEncode(const string s)"
+      },
+      {
+        "name": "percentEncodeComponent",
+        "returnType": "string",
+        "params": "const string s",
+        "signature": "percentEncodeComponent(const string s)"
+      },
+      {
+        "name": "percentDecode",
+        "returnType": "string",
+        "params": "const string s, int errOut",
+        "signature": "percentDecode(const string s, int errOut)"
+      },
+      {
+        "name": "hexEncode",
+        "returnType": "string",
+        "params": "const string s",
+        "signature": "hexEncode(const string s)"
+      },
+      {
+        "name": "hexDecode",
+        "returnType": "string",
+        "params": "const string s, int errOut",
+        "signature": "hexDecode(const string s, int errOut)"
+      }
+    ],
+    "classes": [],
+    "structs": []
+  },
+  "fly.data": {
+    "functions": [],
+    "classes": [
+      {
+        "name": "Deque",
+        "methods": [
+          {
+            "name": "Deque",
+            "params": ""
+          },
+          {
+            "name": "pushBack",
+            "params": "const T val"
+          },
+          {
+            "name": "pushFront",
+            "params": "const T val"
+          },
+          {
+            "name": "popFront",
+            "params": ""
+          },
+          {
+            "name": "popBack",
+            "params": ""
+          },
+          {
+            "name": "peekFront",
+            "params": ""
+          },
+          {
+            "name": "peekBack",
+            "params": ""
+          },
+          {
+            "name": "isEmpty",
+            "params": ""
+          },
+          {
+            "name": "size",
+            "params": ""
+          },
+          {
+            "name": "free",
+            "params": ""
+          }
+        ]
+      },
+      {
+        "name": "List",
+        "methods": [
+          {
+            "name": "List",
+            "params": ""
+          },
+          {
+            "name": "add",
+            "params": "const T val"
+          },
+          {
+            "name": "get",
+            "params": "const pointer idx"
+          },
+          {
+            "name": "set",
+            "params": "const pointer idx, const T val"
+          },
+          {
+            "name": "size",
+            "params": ""
+          },
+          {
+            "name": "remove",
+            "params": "const pointer idx"
+          },
+          {
+            "name": "clear",
+            "params": ""
+          },
+          {
+            "name": "free",
+            "params": ""
+          }
+        ]
+      },
+      {
+        "name": "Map",
+        "methods": [
+          {
+            "name": "Map",
+            "params": ""
+          },
+          {
+            "name": "put",
+            "params": "const K key, const V val"
+          },
+          {
+            "name": "get",
+            "params": "const K key"
+          },
+          {
+            "name": "has",
+            "params": "const K key"
+          },
+          {
+            "name": "remove",
+            "params": "const K key"
+          },
+          {
+            "name": "size",
+            "params": ""
+          },
+          {
+            "name": "free",
+            "params": ""
+          }
+        ]
+      },
+      {
+        "name": "Queue",
+        "methods": [
+          {
+            "name": "Queue",
+            "params": ""
+          },
+          {
+            "name": "enqueue",
+            "params": "const T val"
+          },
+          {
+            "name": "dequeue",
+            "params": ""
+          },
+          {
+            "name": "peek",
+            "params": ""
+          },
+          {
+            "name": "isEmpty",
+            "params": ""
+          },
+          {
+            "name": "size",
+            "params": ""
+          },
+          {
+            "name": "free",
+            "params": ""
+          }
+        ]
+      },
+      {
+        "name": "Set",
+        "methods": [
+          {
+            "name": "Set",
+            "params": ""
+          },
+          {
+            "name": "add",
+            "params": "const T key"
+          },
+          {
+            "name": "has",
+            "params": "const T key"
+          },
+          {
+            "name": "remove",
+            "params": "const T key"
+          },
+          {
+            "name": "size",
+            "params": ""
+          },
+          {
+            "name": "free",
+            "params": ""
+          }
+        ]
+      },
+      {
+        "name": "Stack",
+        "methods": [
+          {
+            "name": "Stack",
+            "params": ""
+          },
+          {
+            "name": "push",
+            "params": "const T val"
+          },
+          {
+            "name": "pop",
+            "params": ""
+          },
+          {
+            "name": "peek",
+            "params": ""
+          },
+          {
+            "name": "isEmpty",
+            "params": ""
+          },
+          {
+            "name": "size",
+            "params": ""
+          },
+          {
+            "name": "free",
+            "params": ""
+          }
+        ]
+      },
+      {
+        "name": "Tree",
+        "methods": [
+          {
+            "name": "Tree",
+            "params": ""
+          },
+          {
+            "name": "put",
+            "params": "const K key, const V val"
+          },
+          {
+            "name": "get",
+            "params": "const K key"
+          },
+          {
+            "name": "has",
+            "params": "const K key"
+          },
+          {
+            "name": "remove",
+            "params": "const K key"
+          },
+          {
+            "name": "size",
+            "params": ""
+          },
+          {
+            "name": "free",
+            "params": ""
+          }
+        ]
+      },
+      {
+        "name": "Wrapper",
+        "methods": [
+          {
+            "name": "Wrapper",
+            "params": "T v"
+          },
+          {
+            "name": "get",
+            "params": ""
+          },
+          {
+            "name": "set",
+            "params": "T v"
+          }
+        ]
+      }
+    ],
+    "structs": []
+  },
+  "fly.hash": {
+    "functions": [
+      {
+        "name": "sha256Hex",
+        "returnType": "string",
+        "params": "const string data",
+        "signature": "sha256Hex(const string data)"
+      },
+      {
+        "name": "sha256String",
+        "returnType": "string",
+        "params": "const string data",
+        "signature": "sha256String(const string data)"
+      },
+      {
+        "name": "sha256File",
+        "returnType": "string",
+        "params": "const string path",
+        "signature": "sha256File(const string path)"
+      },
+      {
+        "name": "sha256Verify",
+        "returnType": "bool",
+        "params": "const string path, const string expected",
+        "signature": "sha256Verify(const string path, const string expected)"
+      },
+      {
+        "name": "crc32",
+        "returnType": "uint",
+        "params": "const string data",
+        "signature": "crc32(const string data)"
+      },
+      {
+        "name": "crc32Hex",
+        "returnType": "string",
+        "params": "const string data",
+        "signature": "crc32Hex(const string data)"
+      }
+    ],
+    "classes": [],
+    "structs": []
+  },
+  "fly.json": {
+    "functions": [
+      {
+        "name": "kind",
+        "returnType": "int",
+        "params": "const pointer v",
+        "signature": "kind(const pointer v)"
+      },
+      {
+        "name": "isNull",
+        "returnType": "bool",
+        "params": "const pointer v",
+        "signature": "isNull(const pointer v)"
+      },
+      {
+        "name": "isBool",
+        "returnType": "bool",
+        "params": "const pointer v",
+        "signature": "isBool(const pointer v)"
+      },
+      {
+        "name": "isNumber",
+        "returnType": "bool",
+        "params": "const pointer v",
+        "signature": "isNumber(const pointer v)"
+      },
+      {
+        "name": "isString",
+        "returnType": "bool",
+        "params": "const pointer v",
+        "signature": "isString(const pointer v)"
+      },
+      {
+        "name": "isArray",
+        "returnType": "bool",
+        "params": "const pointer v",
+        "signature": "isArray(const pointer v)"
+      },
+      {
+        "name": "isObject",
+        "returnType": "bool",
+        "params": "const pointer v",
+        "signature": "isObject(const pointer v)"
+      },
+      {
+        "name": "asBool",
+        "returnType": "bool",
+        "params": "const pointer v",
+        "signature": "asBool(const pointer v)"
+      },
+      {
+        "name": "asString",
+        "returnType": "string",
+        "params": "const pointer v",
+        "signature": "asString(const pointer v)"
+      },
+      {
+        "name": "asNumber",
+        "returnType": "double",
+        "params": "const pointer v",
+        "signature": "asNumber(const pointer v)"
+      },
+      {
+        "name": "asInt",
+        "returnType": "int",
+        "params": "const pointer v",
+        "signature": "asInt(const pointer v)"
+      },
+      {
+        "name": "size",
+        "returnType": "int",
+        "params": "const pointer v",
+        "signature": "size(const pointer v)"
+      },
+      {
+        "name": "at",
+        "returnType": "pointer",
+        "params": "const pointer v, const int i",
+        "signature": "at(const pointer v, const int i)"
+      },
+      {
+        "name": "keyCount",
+        "returnType": "int",
+        "params": "const pointer v",
+        "signature": "keyCount(const pointer v)"
+      },
+      {
+        "name": "keyAt",
+        "returnType": "string",
+        "params": "const pointer v, const int i",
+        "signature": "keyAt(const pointer v, const int i)"
+      },
+      {
+        "name": "has",
+        "returnType": "bool",
+        "params": "const pointer v, const string key",
+        "signature": "has(const pointer v, const string key)"
+      },
+      {
+        "name": "get",
+        "returnType": "pointer",
+        "params": "const pointer v, const string key",
+        "signature": "get(const pointer v, const string key)"
+      },
+      {
+        "name": "freeValue",
+        "returnType": "void",
+        "params": "const pointer v",
+        "signature": "freeValue(const pointer v)"
+      },
+      {
+        "name": "newNull",
+        "returnType": "pointer",
+        "params": "",
+        "signature": "newNull()"
+      },
+      {
+        "name": "newArray",
+        "returnType": "pointer",
+        "params": "",
+        "signature": "newArray()"
+      },
+      {
+        "name": "newObject",
+        "returnType": "pointer",
+        "params": "",
+        "signature": "newObject()"
+      },
+      {
+        "name": "newBool",
+        "returnType": "pointer",
+        "params": "const bool b",
+        "signature": "newBool(const bool b)"
+      },
+      {
+        "name": "newInt",
+        "returnType": "pointer",
+        "params": "const int n",
+        "signature": "newInt(const int n)"
+      },
+      {
+        "name": "newNumber",
+        "returnType": "pointer",
+        "params": "const string literal",
+        "signature": "newNumber(const string literal)"
+      },
+      {
+        "name": "newString",
+        "returnType": "pointer",
+        "params": "const string s",
+        "signature": "newString(const string s)"
+      },
+      {
+        "name": "add",
+        "returnType": "void",
+        "params": "const pointer arr, const pointer child",
+        "signature": "add(const pointer arr, const pointer child)"
+      },
+      {
+        "name": "put",
+        "returnType": "void",
+        "params": "const pointer obj, const string key, const pointer child",
+        "signature": "put(const pointer obj, const string key, const pointer child)"
+      },
+      {
+        "name": "escape",
+        "returnType": "string",
+        "params": "const string s",
+        "signature": "escape(const string s)"
+      },
+      {
+        "name": "write",
+        "returnType": "string",
+        "params": "const pointer v",
+        "signature": "write(const pointer v)"
+      },
+      {
+        "name": "writePretty",
+        "returnType": "string",
+        "params": "const pointer v, const int indent",
+        "signature": "writePretty(const pointer v, const int indent)"
+      },
+      {
+        "name": "unescape",
+        "returnType": "string",
+        "params": "const string s, int errOut",
+        "signature": "unescape(const string s, int errOut)"
+      },
+      {
+        "name": "parse",
+        "returnType": "pointer",
+        "params": "const string src, int errOut",
+        "signature": "parse(const string src, int errOut)"
+      }
+    ],
+    "classes": [],
+    "structs": []
+  },
+  "fly.log": {
+    "functions": [
+      {
+        "name": "setLevel",
+        "returnType": "void",
+        "params": "const LogLevel level",
+        "signature": "setLevel(const LogLevel level)"
+      },
+      {
+        "name": "setLevelName",
+        "returnType": "void",
+        "params": "const string name",
+        "signature": "setLevelName(const string name)"
+      },
+      {
+        "name": "setOff",
+        "returnType": "void",
+        "params": "",
+        "signature": "setOff()"
+      },
+      {
+        "name": "isOff",
+        "returnType": "bool",
+        "params": "",
+        "signature": "isOff()"
+      },
+      {
+        "name": "getLevel",
+        "returnType": "LogLevel",
+        "params": "",
+        "signature": "getLevel()"
+      },
+      {
+        "name": "parseLevel",
+        "returnType": "LogLevel",
+        "params": "const string name",
+        "signature": "parseLevel(const string name)"
+      },
+      {
+        "name": "isLevelName",
+        "returnType": "bool",
+        "params": "const string name",
+        "signature": "isLevelName(const string name)"
+      },
+      {
+        "name": "setFile",
+        "returnType": "void",
+        "params": "const string path",
+        "signature": "setFile(const string path)"
+      },
+      {
+        "name": "reset",
+        "returnType": "void",
+        "params": "",
+        "signature": "reset()"
+      },
+      {
+        "name": "trace",
+        "returnType": "void",
+        "params": "const string msg",
+        "signature": "trace(const string msg)"
+      },
+      {
+        "name": "debug",
+        "returnType": "void",
+        "params": "const string msg",
+        "signature": "debug(const string msg)"
+      },
+      {
+        "name": "info",
+        "returnType": "void",
+        "params": "const string msg",
+        "signature": "info(const string msg)"
+      },
+      {
+        "name": "warn",
+        "returnType": "void",
+        "params": "const string msg",
+        "signature": "warn(const string msg)"
+      },
+      {
+        "name": "err",
+        "returnType": "void",
+        "params": "const string msg",
+        "signature": "err(const string msg)"
+      },
+      {
+        "name": "enter",
+        "returnType": "void",
+        "params": "const string name",
+        "signature": "enter(const string name)"
+      },
+      {
+        "name": "exit",
+        "returnType": "void",
+        "params": "const string name",
+        "signature": "exit(const string name)"
+      },
+      {
+        "name": "exitFail",
+        "returnType": "void",
+        "params": "const string name",
+        "signature": "exitFail(const string name)"
+      }
+    ],
+    "classes": [],
+    "structs": []
+  },
+  "fly.math": {
+    "functions": [
+      {
+        "name": "absI",
+        "returnType": "long",
+        "params": "const long x",
+        "signature": "absI(const long x)"
+      },
+      {
+        "name": "absF",
+        "returnType": "double",
+        "params": "const double x",
+        "signature": "absF(const double x)"
+      },
+      {
+        "name": "sign",
+        "returnType": "int",
+        "params": "const double x",
+        "signature": "sign(const double x)"
+      },
+      {
+        "name": "minI",
+        "returnType": "long",
+        "params": "const long a, const long b",
+        "signature": "minI(const long a, const long b)"
+      },
+      {
+        "name": "minF",
+        "returnType": "double",
+        "params": "const double a, const double b",
+        "signature": "minF(const double a, const double b)"
+      },
+      {
+        "name": "maxI",
+        "returnType": "long",
+        "params": "const long a, const long b",
+        "signature": "maxI(const long a, const long b)"
+      },
+      {
+        "name": "maxF",
+        "returnType": "double",
+        "params": "const double a, const double b",
+        "signature": "maxF(const double a, const double b)"
+      },
+      {
+        "name": "clampI",
+        "returnType": "long",
+        "params": "const long x, const long lo, const long hi",
+        "signature": "clampI(const long x, const long lo, const long hi)"
+      },
+      {
+        "name": "clampF",
+        "returnType": "double",
+        "params": "const double x, const double lo, const double hi",
+        "signature": "clampF(const double x, const double lo, const double hi)"
+      },
+      {
+        "name": "gcd",
+        "returnType": "long",
+        "params": "const long a, const long b",
+        "signature": "gcd(const long a, const long b)"
+      },
+      {
+        "name": "lcm",
+        "returnType": "long",
+        "params": "const long a, const long b",
+        "signature": "lcm(const long a, const long b)"
+      },
+      {
+        "name": "divmod",
+        "returnType": "void",
+        "params": "const long a, const long b, long out_q, long out_r",
+        "signature": "divmod(const long a, const long b, long out_q, long out_r)"
+      },
+      {
+        "name": "sin",
+        "returnType": "double",
+        "params": "const double x",
+        "signature": "sin(const double x)"
+      },
+      {
+        "name": "cos",
+        "returnType": "double",
+        "params": "const double x",
+        "signature": "cos(const double x)"
+      },
+      {
+        "name": "tan",
+        "returnType": "double",
+        "params": "const double x",
+        "signature": "tan(const double x)"
+      },
+      {
+        "name": "asin",
+        "returnType": "double",
+        "params": "const double x",
+        "signature": "asin(const double x)"
+      },
+      {
+        "name": "acos",
+        "returnType": "double",
+        "params": "const double x",
+        "signature": "acos(const double x)"
+      },
+      {
+        "name": "atan",
+        "returnType": "double",
+        "params": "const double x",
+        "signature": "atan(const double x)"
+      },
+      {
+        "name": "atan2",
+        "returnType": "double",
+        "params": "const double y, const double x",
+        "signature": "atan2(const double y, const double x)"
+      },
+      {
+        "name": "sinh",
+        "returnType": "double",
+        "params": "const double x",
+        "signature": "sinh(const double x)"
+      },
+      {
+        "name": "cosh",
+        "returnType": "double",
+        "params": "const double x",
+        "signature": "cosh(const double x)"
+      },
+      {
+        "name": "tanh",
+        "returnType": "double",
+        "params": "const double x",
+        "signature": "tanh(const double x)"
+      },
+      {
+        "name": "toRadians",
+        "returnType": "double",
+        "params": "const double x",
+        "signature": "toRadians(const double x)"
+      },
+      {
+        "name": "toDegrees",
+        "returnType": "double",
+        "params": "const double x",
+        "signature": "toDegrees(const double x)"
+      },
+      {
+        "name": "hypot",
+        "returnType": "double",
+        "params": "const double a, const double b",
+        "signature": "hypot(const double a, const double b)"
+      },
+      {
+        "name": "sqrt",
+        "returnType": "double",
+        "params": "const double x",
+        "signature": "sqrt(const double x)"
+      },
+      {
+        "name": "cbrt",
+        "returnType": "double",
+        "params": "const double x",
+        "signature": "cbrt(const double x)"
+      },
+      {
+        "name": "pow",
+        "returnType": "double",
+        "params": "const double base, const double exp",
+        "signature": "pow(const double base, const double exp)"
+      },
+      {
+        "name": "exp",
+        "returnType": "double",
+        "params": "const double x",
+        "signature": "exp(const double x)"
+      },
+      {
+        "name": "exp2",
+        "returnType": "double",
+        "params": "const double x",
+        "signature": "exp2(const double x)"
+      },
+      {
+        "name": "log",
+        "returnType": "double",
+        "params": "const double x",
+        "signature": "log(const double x)"
+      },
+      {
+        "name": "log2",
+        "returnType": "double",
+        "params": "const double x",
+        "signature": "log2(const double x)"
+      },
+      {
+        "name": "log10",
+        "returnType": "double",
+        "params": "const double x",
+        "signature": "log10(const double x)"
+      },
+      {
+        "name": "logN",
+        "returnType": "double",
+        "params": "const double x, const double n",
+        "signature": "logN(const double x, const double n)"
+      },
+      {
+        "name": "floor",
+        "returnType": "double",
+        "params": "const double x",
+        "signature": "floor(const double x)"
+      },
+      {
+        "name": "ceil",
+        "returnType": "double",
+        "params": "const double x",
+        "signature": "ceil(const double x)"
+      },
+      {
+        "name": "round",
+        "returnType": "double",
+        "params": "const double x",
+        "signature": "round(const double x)"
+      },
+      {
+        "name": "trunc",
+        "returnType": "double",
+        "params": "const double x",
+        "signature": "trunc(const double x)"
+      },
+      {
+        "name": "roundTo",
+        "returnType": "double",
+        "params": "const double x, const int n",
+        "signature": "roundTo(const double x, const int n)"
+      },
+      {
+        "name": "isNaN",
+        "returnType": "bool",
+        "params": "const double x",
+        "signature": "isNaN(const double x)"
+      },
+      {
+        "name": "isInf",
+        "returnType": "bool",
+        "params": "const double x",
+        "signature": "isInf(const double x)"
+      },
+      {
+        "name": "isFinite",
+        "returnType": "bool",
+        "params": "const double x",
+        "signature": "isFinite(const double x)"
+      },
+      {
+        "name": "approxEqual",
+        "returnType": "bool",
+        "params": "const double a, const double b, const double epsilon",
+        "signature": "approxEqual(const double a, const double b, const double epsilon)"
+      },
+      {
+        "name": "copySign",
+        "returnType": "double",
+        "params": "const double x, const double y",
+        "signature": "copySign(const double x, const double y)"
+      },
+      {
+        "name": "isPow2",
+        "returnType": "bool",
+        "params": "const long n",
+        "signature": "isPow2(const long n)"
+      },
+      {
+        "name": "nextPow2",
+        "returnType": "long",
+        "params": "const long n",
+        "signature": "nextPow2(const long n)"
+      },
+      {
+        "name": "popcount",
+        "returnType": "int",
+        "params": "const long n",
+        "signature": "popcount(const long n)"
+      },
+      {
+        "name": "leadingZeros",
+        "returnType": "int",
+        "params": "const long n",
+        "signature": "leadingZeros(const long n)"
+      },
+      {
+        "name": "trailingZeros",
+        "returnType": "int",
+        "params": "const long n",
+        "signature": "trailingZeros(const long n)"
+      },
+      {
+        "name": "rngNext",
+        "returnType": "ulong",
+        "params": "fly_rng rng",
+        "signature": "rngNext(fly_rng rng)"
+      },
+      {
+        "name": "randSeed",
+        "returnType": "void",
+        "params": "fly_rng rng, const ulong seed",
+        "signature": "randSeed(fly_rng rng, const ulong seed)"
+      },
+      {
+        "name": "randFloat",
+        "returnType": "double",
+        "params": "fly_rng rng",
+        "signature": "randFloat(fly_rng rng)"
+      },
+      {
+        "name": "randInt",
+        "returnType": "long",
+        "params": "fly_rng rng, const long a, const long b",
+        "signature": "randInt(fly_rng rng, const long a, const long b)"
+      },
+      {
+        "name": "randNormal",
+        "returnType": "double",
+        "params": "fly_rng rng, const double mu, const double sigma",
+        "signature": "randNormal(fly_rng rng, const double mu, const double sigma)"
+      },
+      {
+        "name": "fma",
+        "returnType": "double",
+        "params": "const double a, const double b, const double c",
+        "signature": "fma(const double a, const double b, const double c)"
+      },
+      {
+        "name": "lerp",
+        "returnType": "double",
+        "params": "const double a, const double b, const double t",
+        "signature": "lerp(const double a, const double b, const double t)"
+      },
+      {
+        "name": "saturate",
+        "returnType": "double",
+        "params": "const double x",
+        "signature": "saturate(const double x)"
+      },
+      {
+        "name": "factorialI",
+        "returnType": "long",
+        "params": "const int n",
+        "signature": "factorialI(const int n)"
+      },
+      {
+        "name": "factorialF",
+        "returnType": "double",
+        "params": "const int n",
+        "signature": "factorialF(const int n)"
+      },
+      {
+        "name": "comb",
+        "returnType": "long",
+        "params": "const long n, const long k",
+        "signature": "comb(const long n, const long k)"
+      },
+      {
+        "name": "perm",
+        "returnType": "long",
+        "params": "const long n, const long k",
+        "signature": "perm(const long n, const long k)"
+      },
+      {
+        "name": "erf",
+        "returnType": "double",
+        "params": "const double x",
+        "signature": "erf(const double x)"
+      },
+      {
+        "name": "erfc",
+        "returnType": "double",
+        "params": "const double x",
+        "signature": "erfc(const double x)"
+      },
+      {
+        "name": "gamma",
+        "returnType": "double",
+        "params": "const double x",
+        "signature": "gamma(const double x)"
+      },
+      {
+        "name": "asinh",
+        "returnType": "double",
+        "params": "const double x",
+        "signature": "asinh(const double x)"
+      },
+      {
+        "name": "acosh",
+        "returnType": "double",
+        "params": "const double x",
+        "signature": "acosh(const double x)"
+      },
+      {
+        "name": "atanh",
+        "returnType": "double",
+        "params": "const double x",
+        "signature": "atanh(const double x)"
+      }
+    ],
+    "classes": [],
+    "structs": [
+      {
+        "name": "fly_rng",
+        "fields": [
+          {
+            "type": "ulong",
+            "name": "s0"
+          },
+          {
+            "type": "ulong",
+            "name": "s1"
+          },
+          {
+            "type": "ulong",
+            "name": "s2"
+          },
+          {
+            "type": "ulong",
+            "name": "s3"
+          }
+        ]
+      }
+    ]
+  },
+  "fly.mem": {
+    "functions": [
+      {
+        "name": "copy",
+        "returnType": "void",
+        "params": "const pointer dst, const pointer src, const pointer size",
+        "signature": "copy(const pointer dst, const pointer src, const pointer size)"
+      },
+      {
+        "name": "move",
+        "returnType": "void",
+        "params": "const pointer dst, const pointer src, const pointer size",
+        "signature": "move(const pointer dst, const pointer src, const pointer size)"
+      },
+      {
+        "name": "zero",
+        "returnType": "void",
+        "params": "const pointer dst, const pointer size",
+        "signature": "zero(const pointer dst, const pointer size)"
+      },
+      {
+        "name": "alloc",
+        "returnType": "pointer",
+        "params": "const pointer size",
+        "signature": "alloc(const pointer size)"
+      },
+      {
+        "name": "free",
+        "returnType": "void",
+        "params": "const pointer ptr, const pointer size",
+        "signature": "free(const pointer ptr, const pointer size)"
+      },
+      {
+        "name": "isNull",
+        "returnType": "bool",
+        "params": "const pointer ptr",
+        "signature": "isNull(const pointer ptr)"
+      },
+      {
+        "name": "realloc",
+        "returnType": "pointer",
+        "params": "const pointer ptr, const pointer newSize",
+        "signature": "realloc(const pointer ptr, const pointer newSize)"
+      },
+      {
+        "name": "compare",
+        "returnType": "int",
+        "params": "const pointer a, const pointer b, const pointer size",
+        "signature": "compare(const pointer a, const pointer b, const pointer size)"
+      },
+      {
+        "name": "readByte",
+        "returnType": "byte",
+        "params": "const pointer ptr, const pointer offset",
+        "signature": "readByte(const pointer ptr, const pointer offset)"
+      },
+      {
+        "name": "readShort",
+        "returnType": "short",
+        "params": "const pointer ptr, const pointer offset",
+        "signature": "readShort(const pointer ptr, const pointer offset)"
+      },
+      {
+        "name": "readInt",
+        "returnType": "int",
+        "params": "const pointer ptr, const pointer offset",
+        "signature": "readInt(const pointer ptr, const pointer offset)"
+      },
+      {
+        "name": "readLong",
+        "returnType": "long",
+        "params": "const pointer ptr, const pointer offset",
+        "signature": "readLong(const pointer ptr, const pointer offset)"
+      },
+      {
+        "name": "writeByte",
+        "returnType": "void",
+        "params": "const pointer ptr, const pointer offset, const byte val",
+        "signature": "writeByte(const pointer ptr, const pointer offset, const byte val)"
+      },
+      {
+        "name": "writeShort",
+        "returnType": "void",
+        "params": "const pointer ptr, const pointer offset, const short val",
+        "signature": "writeShort(const pointer ptr, const pointer offset, const short val)"
+      },
+      {
+        "name": "writeInt",
+        "returnType": "void",
+        "params": "const pointer ptr, const pointer offset, const int val",
+        "signature": "writeInt(const pointer ptr, const pointer offset, const int val)"
+      },
+      {
+        "name": "writeLong",
+        "returnType": "void",
+        "params": "const pointer ptr, const pointer offset, const long val",
+        "signature": "writeLong(const pointer ptr, const pointer offset, const long val)"
+      },
+      {
+        "name": "readPtr",
+        "returnType": "pointer",
+        "params": "const pointer ptr, const pointer offset",
+        "signature": "readPtr(const pointer ptr, const pointer offset)"
+      },
+      {
+        "name": "writePtr",
+        "returnType": "void",
+        "params": "const pointer ptr, const pointer offset, const pointer val",
+        "signature": "writePtr(const pointer ptr, const pointer offset, const pointer val)"
+      }
+    ],
+    "classes": [],
+    "structs": []
+  },
+  "fly.meta": {
+    "functions": [],
+    "classes": [
+      {
+        "name": "Dependency",
+        "methods": []
+      },
+      {
+        "name": "Target",
+        "methods": []
+      },
+      {
+        "name": "Profile",
+        "methods": []
+      },
+      {
+        "name": "TestConfig",
+        "methods": []
+      },
+      {
+        "name": "Registry",
+        "methods": []
+      },
+      {
+        "name": "Workspace",
+        "methods": []
+      },
+      {
+        "name": "Hooks",
+        "methods": []
+      },
+      {
+        "name": "Manifest",
+        "methods": []
+      },
+      {
+        "name": "LockedPackage",
+        "methods": []
+      },
+      {
+        "name": "Lockfile",
+        "methods": []
+      }
+    ],
+    "structs": []
+  },
+  "fly.net": {
+    "functions": [
+      {
+        "name": "ipv4",
+        "returnType": "int",
+        "params": "const int a, const int b, const int c, const int d",
+        "signature": "ipv4(const int a, const int b, const int c, const int d)"
+      },
+      {
+        "name": "loopback",
+        "returnType": "int",
+        "params": "",
+        "signature": "loopback()"
+      },
+      {
+        "name": "anyAddr",
+        "returnType": "int",
+        "params": "",
+        "signature": "anyAddr()"
+      },
+      {
+        "name": "ipToStr",
+        "returnType": "string",
+        "params": "const int addr",
+        "signature": "ipToStr(const int addr)"
+      },
+      {
+        "name": "parseIp",
+        "returnType": "int",
+        "params": "const string s",
+        "signature": "parseIp(const string s)"
+      },
+      {
+        "name": "resolveAll",
+        "returnType": "pointer",
+        "params": "const string host",
+        "signature": "resolveAll(const string host)"
+      },
+      {
+        "name": "addrCount",
+        "returnType": "int",
+        "params": "const pointer h",
+        "signature": "addrCount(const pointer h)"
+      },
+      {
+        "name": "addrAt",
+        "returnType": "int",
+        "params": "const pointer h, const int i",
+        "signature": "addrAt(const pointer h, const int i)"
+      },
+      {
+        "name": "addrFree",
+        "returnType": "void",
+        "params": "const pointer h",
+        "signature": "addrFree(const pointer h)"
+      },
+      {
+        "name": "reverseDns",
+        "returnType": "string",
+        "params": "const int addr",
+        "signature": "reverseDns(const int addr)"
+      },
+      {
+        "name": "peerAddr",
+        "returnType": "int",
+        "params": "const long s",
+        "signature": "peerAddr(const long s)"
+      },
+      {
+        "name": "peerPort",
+        "returnType": "int",
+        "params": "const long s",
+        "signature": "peerPort(const long s)"
+      },
+      {
+        "name": "resolve",
+        "returnType": "int",
+        "params": "const string host",
+        "signature": "resolve(const string host)"
+      },
+      {
+        "name": "socket",
+        "returnType": "long",
+        "params": "",
+        "signature": "socket()"
+      },
+      {
+        "name": "close",
+        "returnType": "void",
+        "params": "const long s",
+        "signature": "close(const long s)"
+      },
+      {
+        "name": "shutdownWrite",
+        "returnType": "bool",
+        "params": "const long s",
+        "signature": "shutdownWrite(const long s)"
+      },
+      {
+        "name": "shutdownBoth",
+        "returnType": "bool",
+        "params": "const long s",
+        "signature": "shutdownBoth(const long s)"
+      },
+      {
+        "name": "reuseAddr",
+        "returnType": "bool",
+        "params": "const long s",
+        "signature": "reuseAddr(const long s)"
+      },
+      {
+        "name": "setRecvTimeout",
+        "returnType": "bool",
+        "params": "const long s, const int ms",
+        "signature": "setRecvTimeout(const long s, const int ms)"
+      },
+      {
+        "name": "setSendTimeout",
+        "returnType": "bool",
+        "params": "const long s, const int ms",
+        "signature": "setSendTimeout(const long s, const int ms)"
+      },
+      {
+        "name": "setNonBlocking",
+        "returnType": "bool",
+        "params": "const long s, const bool on",
+        "signature": "setNonBlocking(const long s, const bool on)"
+      },
+      {
+        "name": "setNoDelay",
+        "returnType": "bool",
+        "params": "const long s, const bool on",
+        "signature": "setNoDelay(const long s, const bool on)"
+      },
+      {
+        "name": "setKeepAlive",
+        "returnType": "bool",
+        "params": "const long s, const bool on",
+        "signature": "setKeepAlive(const long s, const bool on)"
+      },
+      {
+        "name": "setBroadcast",
+        "returnType": "bool",
+        "params": "const long s, const bool on",
+        "signature": "setBroadcast(const long s, const bool on)"
+      },
+      {
+        "name": "setLinger",
+        "returnType": "bool",
+        "params": "const long s, const bool on, const int sec",
+        "signature": "setLinger(const long s, const bool on, const int sec)"
+      },
+      {
+        "name": "setRecvBuf",
+        "returnType": "bool",
+        "params": "const long s, const int bytes",
+        "signature": "setRecvBuf(const long s, const int bytes)"
+      },
+      {
+        "name": "setSendBuf",
+        "returnType": "bool",
+        "params": "const long s, const int bytes",
+        "signature": "setSendBuf(const long s, const int bytes)"
+      },
+      {
+        "name": "sockError",
+        "returnType": "int",
+        "params": "const long s",
+        "signature": "sockError(const long s)"
+      },
+      {
+        "name": "bind",
+        "returnType": "bool",
+        "params": "const long s, const int addr, const int port",
+        "signature": "bind(const long s, const int addr, const int port)"
+      },
+      {
+        "name": "listen",
+        "returnType": "bool",
+        "params": "const long s, const int backlog",
+        "signature": "listen(const long s, const int backlog)"
+      },
+      {
+        "name": "accept",
+        "returnType": "long",
+        "params": "const long s",
+        "signature": "accept(const long s)"
+      },
+      {
+        "name": "localPort",
+        "returnType": "int",
+        "params": "const long s",
+        "signature": "localPort(const long s)"
+      },
+      {
+        "name": "listenOn",
+        "returnType": "long",
+        "params": "const int addr, const int port, const int backlog",
+        "signature": "listenOn(const int addr, const int port, const int backlog)"
+      },
+      {
+        "name": "connect",
+        "returnType": "bool",
+        "params": "const long s, const int addr, const int port",
+        "signature": "connect(const long s, const int addr, const int port)"
+      },
+      {
+        "name": "connectTo",
+        "returnType": "long",
+        "params": "const string host, const int port",
+        "signature": "connectTo(const string host, const int port)"
+      },
+      {
+        "name": "send",
+        "returnType": "long",
+        "params": "const long s, const pointer buf, const int n",
+        "signature": "send(const long s, const pointer buf, const int n)"
+      },
+      {
+        "name": "sendAll",
+        "returnType": "bool",
+        "params": "const long s, const pointer buf, const int n",
+        "signature": "sendAll(const long s, const pointer buf, const int n)"
+      },
+      {
+        "name": "sendStr",
+        "returnType": "bool",
+        "params": "const long s, const string data",
+        "signature": "sendStr(const long s, const string data)"
+      },
+      {
+        "name": "recv",
+        "returnType": "long",
+        "params": "const long s, const pointer buf, const int n",
+        "signature": "recv(const long s, const pointer buf, const int n)"
+      },
+      {
+        "name": "recvExact",
+        "returnType": "long",
+        "params": "const long s, const pointer buf, const int n",
+        "signature": "recvExact(const long s, const pointer buf, const int n)"
+      },
+      {
+        "name": "recvStr",
+        "returnType": "string",
+        "params": "const long s, const int max",
+        "signature": "recvStr(const long s, const int max)"
+      },
+      {
+        "name": "recvUpTo",
+        "returnType": "string",
+        "params": "const long s, const int limit",
+        "signature": "recvUpTo(const long s, const int limit)"
+      },
+      {
+        "name": "recvAll",
+        "returnType": "string",
+        "params": "const long s",
+        "signature": "recvAll(const long s)"
+      },
+      {
+        "name": "socketUdp",
+        "returnType": "long",
+        "params": "",
+        "signature": "socketUdp()"
+      },
+      {
+        "name": "fromNew",
+        "returnType": "pointer",
+        "params": "",
+        "signature": "fromNew()"
+      },
+      {
+        "name": "fromAddr",
+        "returnType": "int",
+        "params": "const pointer from",
+        "signature": "fromAddr(const pointer from)"
+      },
+      {
+        "name": "fromPort",
+        "returnType": "int",
+        "params": "const pointer from",
+        "signature": "fromPort(const pointer from)"
+      },
+      {
+        "name": "fromFree",
+        "returnType": "void",
+        "params": "const pointer from",
+        "signature": "fromFree(const pointer from)"
+      },
+      {
+        "name": "sendTo",
+        "returnType": "long",
+        "params": "const long s, const pointer buf, const int n, const int addr, const int port",
+        "signature": "sendTo(const long s, const pointer buf, const int n, const int addr, const int port)"
+      },
+      {
+        "name": "sendStrTo",
+        "returnType": "bool",
+        "params": "const long s, const string data, const int addr, const int port",
+        "signature": "sendStrTo(const long s, const string data, const int addr, const int port)"
+      },
+      {
+        "name": "recvFrom",
+        "returnType": "long",
+        "params": "const long s, const pointer buf, const int n, const pointer from",
+        "signature": "recvFrom(const long s, const pointer buf, const int n, const pointer from)"
+      },
+      {
+        "name": "recvStrFrom",
+        "returnType": "string",
+        "params": "const long s, const int max, const pointer from",
+        "signature": "recvStrFrom(const long s, const int max, const pointer from)"
+      },
+      {
+        "name": "pollRead",
+        "returnType": "int",
+        "params": "",
+        "signature": "pollRead()"
+      },
+      {
+        "name": "pollWrite",
+        "returnType": "int",
+        "params": "",
+        "signature": "pollWrite()"
+      },
+      {
+        "name": "pollErr",
+        "returnType": "int",
+        "params": "",
+        "signature": "pollErr()"
+      },
+      {
+        "name": "pollHup",
+        "returnType": "int",
+        "params": "",
+        "signature": "pollHup()"
+      },
+      {
+        "name": "pollNew",
+        "returnType": "pointer",
+        "params": "",
+        "signature": "pollNew()"
+      },
+      {
+        "name": "pollCount",
+        "returnType": "int",
+        "params": "const pointer ps",
+        "signature": "pollCount(const pointer ps)"
+      },
+      {
+        "name": "pollAdd",
+        "returnType": "int",
+        "params": "const pointer ps, const long s, const int events",
+        "signature": "pollAdd(const pointer ps, const long s, const int events)"
+      },
+      {
+        "name": "pollSet",
+        "returnType": "bool",
+        "params": "const pointer ps, const int i, const int events",
+        "signature": "pollSet(const pointer ps, const int i, const int events)"
+      },
+      {
+        "name": "pollRemove",
+        "returnType": "bool",
+        "params": "const pointer ps, const int i",
+        "signature": "pollRemove(const pointer ps, const int i)"
+      },
+      {
+        "name": "pollSocketAt",
+        "returnType": "long",
+        "params": "const pointer ps, const int i",
+        "signature": "pollSocketAt(const pointer ps, const int i)"
+      },
+      {
+        "name": "pollEventsAt",
+        "returnType": "int",
+        "params": "const pointer ps, const int i",
+        "signature": "pollEventsAt(const pointer ps, const int i)"
+      },
+      {
+        "name": "pollWait",
+        "returnType": "int",
+        "params": "const pointer ps, const int timeoutMs",
+        "signature": "pollWait(const pointer ps, const int timeoutMs)"
+      },
+      {
+        "name": "pollRevents",
+        "returnType": "int",
+        "params": "const pointer ps, const int i",
+        "signature": "pollRevents(const pointer ps, const int i)"
+      },
+      {
+        "name": "pollIsReady",
+        "returnType": "bool",
+        "params": "const pointer ps, const int i, const int mask",
+        "signature": "pollIsReady(const pointer ps, const int i, const int mask)"
+      },
+      {
+        "name": "pollFree",
+        "returnType": "void",
+        "params": "const pointer ps",
+        "signature": "pollFree(const pointer ps)"
+      }
+    ],
+    "classes": [],
+    "structs": []
+  },
+  "fly.net.http": {
+    "functions": [
+      {
+        "name": "headerEnd",
+        "returnType": "int",
+        "params": "const string raw",
+        "signature": "headerEnd(const string raw)"
+      },
+      {
+        "name": "method",
+        "returnType": "string",
+        "params": "const string raw",
+        "signature": "method(const string raw)"
+      },
+      {
+        "name": "target",
+        "returnType": "string",
+        "params": "const string raw",
+        "signature": "target(const string raw)"
+      },
+      {
+        "name": "version",
+        "returnType": "string",
+        "params": "const string raw",
+        "signature": "version(const string raw)"
+      },
+      {
+        "name": "path",
+        "returnType": "string",
+        "params": "const string raw",
+        "signature": "path(const string raw)"
+      },
+      {
+        "name": "query",
+        "returnType": "string",
+        "params": "const string raw",
+        "signature": "query(const string raw)"
+      },
+      {
+        "name": "header",
+        "returnType": "string",
+        "params": "const string raw, const string name",
+        "signature": "header(const string raw, const string name)"
+      },
+      {
+        "name": "contentLength",
+        "returnType": "int",
+        "params": "const string raw",
+        "signature": "contentLength(const string raw)"
+      },
+      {
+        "name": "body",
+        "returnType": "string",
+        "params": "const string raw",
+        "signature": "body(const string raw)"
+      },
+      {
+        "name": "isChunked",
+        "returnType": "bool",
+        "params": "const string raw",
+        "signature": "isChunked(const string raw)"
+      },
+      {
+        "name": "dechunk",
+        "returnType": "string",
+        "params": "const string body",
+        "signature": "dechunk(const string body)"
+      },
+      {
+        "name": "bodyDecoded",
+        "returnType": "string",
+        "params": "const string raw",
+        "signature": "bodyDecoded(const string raw)"
+      },
+      {
+        "name": "isComplete",
+        "returnType": "bool",
+        "params": "const string raw",
+        "signature": "isComplete(const string raw)"
+      },
+      {
+        "name": "queryParam",
+        "returnType": "string",
+        "params": "const string raw, const string key",
+        "signature": "queryParam(const string raw, const string key)"
+      },
+      {
+        "name": "statusText",
+        "returnType": "string",
+        "params": "const int status",
+        "signature": "statusText(const int status)"
+      },
+      {
+        "name": "joinHeaders",
+        "returnType": "string",
+        "params": "const string a, const string b",
+        "signature": "joinHeaders(const string a, const string b)"
+      },
+      {
+        "name": "responseWith",
+        "returnType": "string",
+        "params": "const int status, const string contentType, const string extraHeaders, const string bodyStr",
+        "signature": "responseWith(const int status, const string contentType, const string extraHeaders, const string bodyStr)"
+      },
+      {
+        "name": "responseConn",
+        "returnType": "string",
+        "params": "const int status, const string contentType, const string extraHeaders, const bool keepAlive, const string bodyStr",
+        "signature": "responseConn(const int status, const string contentType, const string extraHeaders, const bool keepAlive, const string bodyStr)"
+      },
+      {
+        "name": "response",
+        "returnType": "string",
+        "params": "const int status, const string contentType, const string bodyStr",
+        "signature": "response(const int status, const string contentType, const string bodyStr)"
+      },
+      {
+        "name": "buildRequest",
+        "returnType": "string",
+        "params": "const string method, const string targetPath, const string host, const string extraHeaders, const string bodyStr",
+        "signature": "buildRequest(const string method, const string targetPath, const string host, const string extraHeaders, const string bodyStr)"
+      },
+      {
+        "name": "buildRequestConn",
+        "returnType": "string",
+        "params": "const string method, const string targetPath, const string host, const string extraHeaders, const string bodyStr, const bool keepAlive",
+        "signature": "buildRequestConn(const string method, const string targetPath, const string host, const string extraHeaders, const string bodyStr, const bool keepAlive)"
+      },
+      {
+        "name": "basicAuth",
+        "returnType": "string",
+        "params": "const string user, const string password",
+        "signature": "basicAuth(const string user, const string password)"
+      },
+      {
+        "name": "respStatus",
+        "returnType": "int",
+        "params": "const string raw",
+        "signature": "respStatus(const string raw)"
+      },
+      {
+        "name": "respHeader",
+        "returnType": "string",
+        "params": "const string raw, const string name",
+        "signature": "respHeader(const string raw, const string name)"
+      },
+      {
+        "name": "respBody",
+        "returnType": "string",
+        "params": "const string raw",
+        "signature": "respBody(const string raw)"
+      },
+      {
+        "name": "urlScheme",
+        "returnType": "string",
+        "params": "const string url",
+        "signature": "urlScheme(const string url)"
+      },
+      {
+        "name": "urlHost",
+        "returnType": "string",
+        "params": "const string url",
+        "signature": "urlHost(const string url)"
+      },
+      {
+        "name": "urlPort",
+        "returnType": "int",
+        "params": "const string url",
+        "signature": "urlPort(const string url)"
+      },
+      {
+        "name": "urlPath",
+        "returnType": "string",
+        "params": "const string url",
+        "signature": "urlPath(const string url)"
+      },
+      {
+        "name": "isRedirect",
+        "returnType": "bool",
+        "params": "const int status",
+        "signature": "isRedirect(const int status)"
+      },
+      {
+        "name": "resolveUrl",
+        "returnType": "string",
+        "params": "const string baseUrl, const string location",
+        "signature": "resolveUrl(const string baseUrl, const string location)"
+      },
+      {
+        "name": "redirectTarget",
+        "returnType": "string",
+        "params": "const string resp, const string baseUrl",
+        "signature": "redirectTarget(const string resp, const string baseUrl)"
+      },
+      {
+        "name": "mpNew",
+        "returnType": "pointer",
+        "params": "const string boundary",
+        "signature": "mpNew(const string boundary)"
+      },
+      {
+        "name": "mpContentType",
+        "returnType": "string",
+        "params": "const pointer h",
+        "signature": "mpContentType(const pointer h)"
+      },
+      {
+        "name": "mpAddField",
+        "returnType": "void",
+        "params": "const pointer h, const string name, const string value",
+        "signature": "mpAddField(const pointer h, const string name, const string value)"
+      },
+      {
+        "name": "mpAddFile",
+        "returnType": "void",
+        "params": "const pointer h, const string name, const string filename, const string contentType, const string content",
+        "signature": "mpAddFile(const pointer h, const string name, const string filename, const string contentType, const string content)"
+      },
+      {
+        "name": "mpFinish",
+        "returnType": "string",
+        "params": "const pointer h",
+        "signature": "mpFinish(const pointer h)"
+      },
+      {
+        "name": "mpFree",
+        "returnType": "void",
+        "params": "const pointer h",
+        "signature": "mpFree(const pointer h)"
+      },
+      {
+        "name": "exchange",
+        "returnType": "string",
+        "params": "const string host, const int port, const string rawRequest",
+        "signature": "exchange(const string host, const int port, const string rawRequest)"
+      },
+      {
+        "name": "connOpen",
+        "returnType": "long",
+        "params": "const string host, const int port, const int timeoutMs",
+        "signature": "connOpen(const string host, const int port, const int timeoutMs)"
+      },
+      {
+        "name": "connExchange",
+        "returnType": "string",
+        "params": "const long s, const string rawRequest",
+        "signature": "connExchange(const long s, const string rawRequest)"
+      },
+      {
+        "name": "connIsClosing",
+        "returnType": "bool",
+        "params": "const string resp",
+        "signature": "connIsClosing(const string resp)"
+      },
+      {
+        "name": "connClose",
+        "returnType": "void",
+        "params": "const long s",
+        "signature": "connClose(const long s)"
+      },
+      {
+        "name": "httpsAvailable",
+        "returnType": "bool",
+        "params": "",
+        "signature": "httpsAvailable()"
+      },
+      {
+        "name": "httpsSupported",
+        "returnType": "bool",
+        "params": "",
+        "signature": "httpsSupported()"
+      },
+      {
+        "name": "getSecure",
+        "returnType": "string",
+        "params": "const string url",
+        "signature": "getSecure(const string url)"
+      },
+      {
+        "name": "getSecureStatus",
+        "returnType": "int",
+        "params": "const string url",
+        "signature": "getSecureStatus(const string url)"
+      },
+      {
+        "name": "downloadSecure",
+        "returnType": "bool",
+        "params": "const string url, const string destPath",
+        "signature": "downloadSecure(const string url, const string destPath)"
+      },
+      {
+        "name": "postFileSecure",
+        "returnType": "bool",
+        "params": "const string url, const string filePath, const string token",
+        "signature": "postFileSecure(const string url, const string filePath, const string token)"
+      },
+      {
+        "name": "get",
+        "returnType": "string",
+        "params": "const string url",
+        "signature": "get(const string url)"
+      },
+      {
+        "name": "getFollow",
+        "returnType": "string",
+        "params": "const string url, const int maxHops",
+        "signature": "getFollow(const string url, const int maxHops)"
+      },
+      {
+        "name": "getStatus",
+        "returnType": "int",
+        "params": "const string url",
+        "signature": "getStatus(const string url)"
+      },
+      {
+        "name": "download",
+        "returnType": "bool",
+        "params": "const string url, const string destPath",
+        "signature": "download(const string url, const string destPath)"
+      },
+      {
+        "name": "postFile",
+        "returnType": "bool",
+        "params": "const string url, const string filePath, const string token",
+        "signature": "postFile(const string url, const string filePath, const string token)"
+      }
+    ],
+    "classes": [],
+    "structs": []
+  },
+  "fly.net.tls": {
+    "functions": [
+      {
+        "name": "tlsAvailable",
+        "returnType": "bool",
+        "params": "",
+        "signature": "tlsAvailable()"
+      },
+      {
+        "name": "tlsWrap",
+        "returnType": "pointer",
+        "params": "const long sock, const string sniHost, const bool verify",
+        "signature": "tlsWrap(const long sock, const string sniHost, const bool verify)"
+      },
+      {
+        "name": "tlsConnectOpts",
+        "returnType": "pointer",
+        "params": "const string host, const int port, const bool verify, const int timeoutMs",
+        "signature": "tlsConnectOpts(const string host, const int port, const bool verify, const int timeoutMs)"
+      },
+      {
+        "name": "tlsConnect",
+        "returnType": "pointer",
+        "params": "const string host, const int port",
+        "signature": "tlsConnect(const string host, const int port)"
+      },
+      {
+        "name": "tlsSocket",
+        "returnType": "long",
+        "params": "const pointer c",
+        "signature": "tlsSocket(const pointer c)"
+      },
+      {
+        "name": "tlsSend",
+        "returnType": "long",
+        "params": "const pointer c, const pointer buf, const int n",
+        "signature": "tlsSend(const pointer c, const pointer buf, const int n)"
+      },
+      {
+        "name": "tlsSendStr",
+        "returnType": "bool",
+        "params": "const pointer c, const string data",
+        "signature": "tlsSendStr(const pointer c, const string data)"
+      },
+      {
+        "name": "tlsRecv",
+        "returnType": "long",
+        "params": "const pointer c, const pointer buf, const int n",
+        "signature": "tlsRecv(const pointer c, const pointer buf, const int n)"
+      },
+      {
+        "name": "tlsRecvStr",
+        "returnType": "string",
+        "params": "const pointer c, const int max",
+        "signature": "tlsRecvStr(const pointer c, const int max)"
+      },
+      {
+        "name": "tlsRecvAll",
+        "returnType": "string",
+        "params": "const pointer c",
+        "signature": "tlsRecvAll(const pointer c)"
+      },
+      {
+        "name": "tlsLastError",
+        "returnType": "int",
+        "params": "const pointer c",
+        "signature": "tlsLastError(const pointer c)"
+      },
+      {
+        "name": "tlsClose",
+        "returnType": "void",
+        "params": "const pointer c",
+        "signature": "tlsClose(const pointer c)"
+      },
+      {
+        "name": "tlsFree",
+        "returnType": "void",
+        "params": "const pointer c",
+        "signature": "tlsFree(const pointer c)"
+      }
+    ],
+    "classes": [],
+    "structs": []
+  },
+  "fly.os.env": {
+    "functions": [
+      {
+        "name": "get",
+        "returnType": "string",
+        "params": "const string key",
+        "signature": "get(const string key)"
+      },
+      {
+        "name": "set",
+        "returnType": "void",
+        "params": "const string key, const string value",
+        "signature": "set(const string key, const string value)"
+      },
+      {
+        "name": "delete",
+        "returnType": "void",
+        "params": "const string key",
+        "signature": "delete(const string key)"
+      },
+      {
+        "name": "all",
+        "returnType": "StringArray",
+        "params": "",
+        "signature": "all()"
+      },
+      {
+        "name": "expand",
+        "returnType": "string",
+        "params": "const string s",
+        "signature": "expand(const string s)"
+      },
+      {
+        "name": "cwdGet",
+        "returnType": "string",
+        "params": "",
+        "signature": "cwdGet()"
+      },
+      {
+        "name": "cwdSet",
+        "returnType": "void",
+        "params": "const string path",
+        "signature": "cwdSet(const string path)"
+      },
+      {
+        "name": "argsGet",
+        "returnType": "StringArray",
+        "params": "",
+        "signature": "argsGet()"
+      },
+      {
+        "name": "argsCount",
+        "returnType": "pointer",
+        "params": "",
+        "signature": "argsCount()"
+      },
+      {
+        "name": "hostname",
+        "returnType": "string",
+        "params": "",
+        "signature": "hostname()"
+      },
+      {
+        "name": "osname",
+        "returnType": "string",
+        "params": "",
+        "signature": "osname()"
+      },
+      {
+        "name": "arch",
+        "returnType": "string",
+        "params": "",
+        "signature": "arch()"
+      },
+      {
+        "name": "exePath",
+        "returnType": "string",
+        "params": "",
+        "signature": "exePath()"
+      },
+      {
+        "name": "kernel",
+        "returnType": "string",
+        "params": "",
+        "signature": "kernel()"
+      },
+      {
+        "name": "kernelVersion",
+        "returnType": "string",
+        "params": "",
+        "signature": "kernelVersion()"
+      },
+      {
+        "name": "endianness",
+        "returnType": "string",
+        "params": "",
+        "signature": "endianness()"
+      },
+      {
+        "name": "platform",
+        "returnType": "string",
+        "params": "",
+        "signature": "platform()"
+      },
+      {
+        "name": "exit",
+        "returnType": "void",
+        "params": "const int code",
+        "signature": "exit(const int code)"
+      },
+      {
+        "name": "allCount",
+        "returnType": "pointer",
+        "params": "",
+        "signature": "allCount()"
+      }
+    ],
+    "classes": [],
+    "structs": [
+      {
+        "name": "StringArray",
+        "fields": [
+          {
+            "type": "pointer",
+            "name": "items"
+          },
+          {
+            "type": "pointer",
+            "name": "count"
+          }
+        ]
+      }
+    ]
+  },
+  "fly.os.fs": {
+    "functions": [
+      {
+        "name": "open",
+        "returnType": "File",
+        "params": "const string path",
+        "signature": "open(const string path)"
+      },
+      {
+        "name": "create",
+        "returnType": "File",
+        "params": "const string path",
+        "signature": "create(const string path)"
+      },
+      {
+        "name": "openOpts",
+        "returnType": "File",
+        "params": "const string path, const int flags, const int perm",
+        "signature": "openOpts(const string path, const int flags, const int perm)"
+      },
+      {
+        "name": "close",
+        "returnType": "void",
+        "params": "File f",
+        "signature": "close(File f)"
+      },
+      {
+        "name": "read",
+        "returnType": "fly.os.io.Buf",
+        "params": "const string path",
+        "signature": "read(const string path)"
+      },
+      {
+        "name": "write",
+        "returnType": "void",
+        "params": "const string path, fly.os.io.Buf data, const int perm",
+        "signature": "write(const string path, fly.os.io.Buf data, const int perm)"
+      },
+      {
+        "name": "append",
+        "returnType": "void",
+        "params": "const string path, fly.os.io.Buf data, const int perm",
+        "signature": "append(const string path, fly.os.io.Buf data, const int perm)"
+      },
+      {
+        "name": "seekTo",
+        "returnType": "long",
+        "params": "File f, const long offset, const int whence",
+        "signature": "seekTo(File f, const long offset, const int whence)"
+      },
+      {
+        "name": "seekPos",
+        "returnType": "long",
+        "params": "File f",
+        "signature": "seekPos(File f)"
+      },
+      {
+        "name": "stat",
+        "returnType": "Stat",
+        "params": "const string path",
+        "signature": "stat(const string path)"
+      },
+      {
+        "name": "lstat",
+        "returnType": "Stat",
+        "params": "const string path",
+        "signature": "lstat(const string path)"
+      },
+      {
+        "name": "size",
+        "returnType": "ulong",
+        "params": "const string path",
+        "signature": "size(const string path)"
+      },
+      {
+        "name": "exists",
+        "returnType": "bool",
+        "params": "const string path",
+        "signature": "exists(const string path)"
+      },
+      {
+        "name": "sync",
+        "returnType": "void",
+        "params": "File f",
+        "signature": "sync(File f)"
+      },
+      {
+        "name": "truncate",
+        "returnType": "void",
+        "params": "const string path, const long size",
+        "signature": "truncate(const string path, const long size)"
+      },
+      {
+        "name": "chmod",
+        "returnType": "void",
+        "params": "const string path, const int mode",
+        "signature": "chmod(const string path, const int mode)"
+      },
+      {
+        "name": "delete",
+        "returnType": "void",
+        "params": "const string path",
+        "signature": "delete(const string path)"
+      },
+      {
+        "name": "copy",
+        "returnType": "void",
+        "params": "const string src, const string dst",
+        "signature": "copy(const string src, const string dst)"
+      },
+      {
+        "name": "move",
+        "returnType": "void",
+        "params": "const string src, const string dst",
+        "signature": "move(const string src, const string dst)"
+      },
+      {
+        "name": "rename",
+        "returnType": "void",
+        "params": "const string src, const string dst",
+        "signature": "rename(const string src, const string dst)"
+      },
+      {
+        "name": "dirCreate",
+        "returnType": "void",
+        "params": "const string path, const int perm",
+        "signature": "dirCreate(const string path, const int perm)"
+      },
+      {
+        "name": "dirCreateAll",
+        "returnType": "void",
+        "params": "const string path, const int perm",
+        "signature": "dirCreateAll(const string path, const int perm)"
+      },
+      {
+        "name": "dirDelete",
+        "returnType": "void",
+        "params": "const string path",
+        "signature": "dirDelete(const string path)"
+      },
+      {
+        "name": "dirDeleteAll",
+        "returnType": "void",
+        "params": "const string path",
+        "signature": "dirDeleteAll(const string path)"
+      },
+      {
+        "name": "dirRead",
+        "returnType": "DirEntries",
+        "params": "const string path",
+        "signature": "dirRead(const string path)"
+      },
+      {
+        "name": "symlinkCreate",
+        "returnType": "void",
+        "params": "const string target, const string link",
+        "signature": "symlinkCreate(const string target, const string link)"
+      },
+      {
+        "name": "symlinkRead",
+        "returnType": "string",
+        "params": "const string path",
+        "signature": "symlinkRead(const string path)"
+      },
+      {
+        "name": "tempFile",
+        "returnType": "string, File",
+        "params": "const string dir, const string pattern",
+        "signature": "tempFile(const string dir, const string pattern)"
+      },
+      {
+        "name": "tempDir",
+        "returnType": "string",
+        "params": "const string dir, const string pattern",
+        "signature": "tempDir(const string dir, const string pattern)"
+      },
+      {
+        "name": "writeStr",
+        "returnType": "void",
+        "params": "const string path, const string content, const int perm",
+        "signature": "writeStr(const string path, const string content, const int perm)"
+      },
+      {
+        "name": "writeBytes",
+        "returnType": "void",
+        "params": "const string path, const string content, const int perm",
+        "signature": "writeBytes(const string path, const string content, const int perm)"
+      },
+      {
+        "name": "readBytes",
+        "returnType": "string",
+        "params": "const string path",
+        "signature": "readBytes(const string path)"
+      },
+      {
+        "name": "readStr",
+        "returnType": "string",
+        "params": "const string path",
+        "signature": "readStr(const string path)"
+      },
+      {
+        "name": "appendStr",
+        "returnType": "void",
+        "params": "const string path, const string content, const int perm",
+        "signature": "appendStr(const string path, const string content, const int perm)"
+      },
+      {
+        "name": "isFile",
+        "returnType": "bool",
+        "params": "const string path",
+        "signature": "isFile(const string path)"
+      },
+      {
+        "name": "isDir",
+        "returnType": "bool",
+        "params": "const string path",
+        "signature": "isDir(const string path)"
+      }
+    ],
+    "classes": [],
+    "structs": [
+      {
+        "name": "File",
+        "fields": [
+          {
+            "type": "int",
+            "name": "fd"
+          },
+          {
+            "type": "byte",
+            "name": "flags"
+          }
+        ]
+      },
+      {
+        "name": "Stat",
+        "fields": [
+          {
+            "type": "ulong",
+            "name": "size"
+          },
+          {
+            "type": "ulong",
+            "name": "mtime_sec"
+          },
+          {
+            "type": "ulong",
+            "name": "mtime_nsec"
+          },
+          {
+            "type": "uint",
+            "name": "mode"
+          },
+          {
+            "type": "int",
+            "name": "is_file"
+          },
+          {
+            "type": "int",
+            "name": "is_dir"
+          },
+          {
+            "type": "int",
+            "name": "is_symlink"
+          }
+        ]
+      },
+      {
+        "name": "DirEntry",
+        "fields": [
+          {
+            "type": "string",
+            "name": "name"
+          },
+          {
+            "type": "Stat",
+            "name": "stat"
+          }
+        ]
+      },
+      {
+        "name": "DirEntries",
+        "fields": [
+          {
+            "type": "pointer",
+            "name": "items"
+          },
+          {
+            "type": "ulong",
+            "name": "len"
+          },
+          {
+            "type": "ulong",
+            "name": "cap"
+          }
+        ]
+      }
+    ]
+  },
+  "fly.os.io": {
+    "functions": [
+      {
+        "name": "fileReader",
+        "returnType": "Reader",
+        "params": "const int fd",
+        "signature": "fileReader(const int fd)"
+      },
+      {
+        "name": "fileWriter",
+        "returnType": "Writer",
+        "params": "const int fd",
+        "signature": "fileWriter(const int fd)"
+      },
+      {
+        "name": "readAll",
+        "returnType": "Buf",
+        "params": "Reader r",
+        "signature": "readAll(Reader r)"
+      },
+      {
+        "name": "readExact",
+        "returnType": "Buf",
+        "params": "Reader r, const ulong n",
+        "signature": "readExact(Reader r, const ulong n)"
+      },
+      {
+        "name": "setBinaryMode",
+        "returnType": "bool",
+        "params": "const int fd",
+        "signature": "setBinaryMode(const int fd)"
+      },
+      {
+        "name": "readLine",
+        "returnType": "string",
+        "params": "Reader r",
+        "signature": "readLine(Reader r)"
+      },
+      {
+        "name": "readLines",
+        "returnType": "fly.os.env.StringArray",
+        "params": "Reader r",
+        "signature": "readLines(Reader r)"
+      },
+      {
+        "name": "writeAll",
+        "returnType": "bool",
+        "params": "Writer w, Buf buf",
+        "signature": "writeAll(Writer w, Buf buf)"
+      },
+      {
+        "name": "writeString",
+        "returnType": "bool",
+        "params": "Writer w, const string s",
+        "signature": "writeString(Writer w, const string s)"
+      },
+      {
+        "name": "readerNew",
+        "returnType": "BufReader",
+        "params": "Reader inner, const ulong cap",
+        "signature": "readerNew(Reader inner, const ulong cap)"
+      },
+      {
+        "name": "peek",
+        "returnType": "Buf",
+        "params": "BufReader r, const ulong n",
+        "signature": "peek(BufReader r, const ulong n)"
+      },
+      {
+        "name": "fill",
+        "returnType": "void",
+        "params": "BufReader r",
+        "signature": "fill(BufReader r)"
+      },
+      {
+        "name": "bufReadLine",
+        "returnType": "string",
+        "params": "BufReader r",
+        "signature": "bufReadLine(BufReader r)"
+      },
+      {
+        "name": "writerNew",
+        "returnType": "BufWriter",
+        "params": "Writer inner, const ulong cap",
+        "signature": "writerNew(Writer inner, const ulong cap)"
+      },
+      {
+        "name": "bufWrite",
+        "returnType": "void",
+        "params": "BufWriter w, Buf buf",
+        "signature": "bufWrite(BufWriter w, Buf buf)"
+      },
+      {
+        "name": "bufFlush",
+        "returnType": "void",
+        "params": "BufWriter w",
+        "signature": "bufFlush(BufWriter w)"
+      },
+      {
+        "name": "bufRead",
+        "returnType": "long",
+        "params": "BufReader r, Buf buf, const ulong n",
+        "signature": "bufRead(BufReader r, Buf buf, const ulong n)"
+      },
+      {
+        "name": "bufAvailable",
+        "returnType": "ulong",
+        "params": "BufReader r",
+        "signature": "bufAvailable(BufReader r)"
+      },
+      {
+        "name": "bufClose",
+        "returnType": "void",
+        "params": "BufReader r",
+        "signature": "bufClose(BufReader r)"
+      },
+      {
+        "name": "bufWriterClose",
+        "returnType": "void",
+        "params": "BufWriter w",
+        "signature": "bufWriterClose(BufWriter w)"
+      },
+      {
+        "name": "copy",
+        "returnType": "long",
+        "params": "Reader src, Writer dst",
+        "signature": "copy(Reader src, Writer dst)"
+      },
+      {
+        "name": "copyN",
+        "returnType": "long",
+        "params": "Reader src, Writer dst, const ulong n",
+        "signature": "copyN(Reader src, Writer dst, const ulong n)"
+      },
+      {
+        "name": "pipe",
+        "returnType": "long",
+        "params": "Reader pipe_r, Writer pipe_w",
+        "signature": "pipe(Reader pipe_r, Writer pipe_w)"
+      },
+      {
+        "name": "writeNL",
+        "returnType": "void",
+        "params": "Writer w",
+        "signature": "writeNL(Writer w)"
+      },
+      {
+        "name": "printErr",
+        "returnType": "void",
+        "params": "const string s",
+        "signature": "printErr(const string s)"
+      },
+      {
+        "name": "printErrLn",
+        "returnType": "void",
+        "params": "const string s",
+        "signature": "printErrLn(const string s)"
+      },
+      {
+        "name": "print",
+        "returnType": "void",
+        "params": "const string s",
+        "signature": "print(const string s)"
+      },
+      {
+        "name": "printLn",
+        "returnType": "void",
+        "params": "const string s",
+        "signature": "printLn(const string s)"
+      }
+    ],
+    "classes": [
+      {
+        "name": "Reader",
+        "methods": []
+      },
+      {
+        "name": "Writer",
+        "methods": []
+      },
+      {
+        "name": "FileReader",
+        "methods": [
+          {
+            "name": "read",
+            "params": "Buf buf, const ulong n"
+          },
+          {
+            "name": "close",
+            "params": ""
+          }
+        ]
+      },
+      {
+        "name": "FileWriter",
+        "methods": [
+          {
+            "name": "write",
+            "params": "Buf buf, const ulong n"
+          },
+          {
+            "name": "flush",
+            "params": ""
+          },
+          {
+            "name": "close",
+            "params": ""
+          }
+        ]
+      },
+      {
+        "name": "BufReader",
+        "methods": [
+          {
+            "name": "refill",
+            "params": ""
+          },
+          {
+            "name": "available",
+            "params": ""
+          },
+          {
+            "name": "bufAt",
+            "params": ""
+          },
+          {
+            "name": "takeByte",
+            "params": "byte b"
+          },
+          {
+            "name": "read",
+            "params": "Buf buf, const ulong n"
+          },
+          {
+            "name": "close",
+            "params": ""
+          }
+        ]
+      },
+      {
+        "name": "BufWriter",
+        "methods": [
+          {
+            "name": "write",
+            "params": "Buf buf, const ulong n"
+          },
+          {
+            "name": "flush",
+            "params": ""
+          },
+          {
+            "name": "close",
+            "params": ""
+          }
+        ]
+      }
+    ],
+    "structs": [
+      {
+        "name": "Buf",
+        "fields": [
+          {
+            "type": "pointer",
+            "name": "ptr"
+          },
+          {
+            "type": "ulong",
+            "name": "size"
+          },
+          {
+            "type": "ulong",
+            "name": "cap"
+          }
+        ]
+      }
+    ]
+  },
+  "fly.os.path": {
+    "functions": [
+      {
+        "name": "join",
+        "returnType": "string",
+        "params": "const string base, const string comp",
+        "signature": "join(const string base, const string comp)"
+      },
+      {
+        "name": "joinN",
+        "returnType": "string",
+        "params": "const string parts, const int n",
+        "signature": "joinN(const string parts, const int n)"
+      },
+      {
+        "name": "absolute",
+        "returnType": "string",
+        "params": "const string path",
+        "signature": "absolute(const string path)"
+      },
+      {
+        "name": "basename",
+        "returnType": "string",
+        "params": "const string path",
+        "signature": "basename(const string path)"
+      },
+      {
+        "name": "dirname",
+        "returnType": "string",
+        "params": "const string path",
+        "signature": "dirname(const string path)"
+      },
+      {
+        "name": "ext",
+        "returnType": "string",
+        "params": "const string path",
+        "signature": "ext(const string path)"
+      },
+      {
+        "name": "stem",
+        "returnType": "string",
+        "params": "const string path",
+        "signature": "stem(const string path)"
+      },
+      {
+        "name": "split",
+        "returnType": "string, string",
+        "params": "const string path",
+        "signature": "split(const string path)"
+      },
+      {
+        "name": "splitExt",
+        "returnType": "string, string",
+        "params": "const string path",
+        "signature": "splitExt(const string path)"
+      },
+      {
+        "name": "isAbsolute",
+        "returnType": "bool",
+        "params": "const string path",
+        "signature": "isAbsolute(const string path)"
+      },
+      {
+        "name": "isRelative",
+        "returnType": "bool",
+        "params": "const string path",
+        "signature": "isRelative(const string path)"
+      },
+      {
+        "name": "normalize",
+        "returnType": "string",
+        "params": "const string path",
+        "signature": "normalize(const string path)"
+      },
+      {
+        "name": "normalizeInPlace",
+        "returnType": "void",
+        "params": "string path",
+        "signature": "normalizeInPlace(string path)"
+      },
+      {
+        "name": "rel",
+        "returnType": "string",
+        "params": "const string base, const string target",
+        "signature": "rel(const string base, const string target)"
+      },
+      {
+        "name": "isFile",
+        "returnType": "bool",
+        "params": "const string path",
+        "signature": "isFile(const string path)"
+      },
+      {
+        "name": "isDir",
+        "returnType": "bool",
+        "params": "const string path",
+        "signature": "isDir(const string path)"
+      },
+      {
+        "name": "isSym",
+        "returnType": "bool",
+        "params": "const string path",
+        "signature": "isSym(const string path)"
+      },
+      {
+        "name": "glob",
+        "returnType": "fly.os.env.StringArray",
+        "params": "const string pattern",
+        "signature": "glob(const string pattern)"
+      },
+      {
+        "name": "globCount",
+        "returnType": "int",
+        "params": "const string pattern",
+        "signature": "globCount(const string pattern)"
+      },
+      {
+        "name": "match",
+        "returnType": "bool",
+        "params": "const string pattern, const string name",
+        "signature": "match(const string pattern, const string name)"
+      },
+      {
+        "name": "comp",
+        "returnType": "fly.os.env.StringArray",
+        "params": "const string path",
+        "signature": "comp(const string path)"
+      },
+      {
+        "name": "sep",
+        "returnType": "byte",
+        "params": "",
+        "signature": "sep()"
+      },
+      {
+        "name": "compCount",
+        "returnType": "int",
+        "params": "const string path",
+        "signature": "compCount(const string path)"
+      }
+    ],
+    "classes": [],
+    "structs": []
+  },
+  "fly.os.proc": {
+    "functions": [
+      {
+        "name": "argsNew",
+        "returnType": "pointer",
+        "params": "",
+        "signature": "argsNew()"
+      },
+      {
+        "name": "argsAdd",
+        "returnType": "void",
+        "params": "const pointer h, const string a",
+        "signature": "argsAdd(const pointer h, const string a)"
+      },
+      {
+        "name": "exec",
+        "returnType": "int",
+        "params": "const string path, const pointer h",
+        "signature": "exec(const string path, const pointer h)"
+      },
+      {
+        "name": "run",
+        "returnType": "int",
+        "params": "const string path",
+        "signature": "run(const string path)"
+      },
+      {
+        "name": "execCapture",
+        "returnType": "int",
+        "params": "const string path, const pointer h, const string outPath",
+        "signature": "execCapture(const string path, const pointer h, const string outPath)"
+      },
+      {
+        "name": "argsFree",
+        "returnType": "void",
+        "params": "const pointer h",
+        "signature": "argsFree(const pointer h)"
+      }
+    ],
+    "classes": [],
+    "structs": []
+  },
+  "fly.os.time": {
+    "functions": [
+      {
+        "name": "now",
+        "returnType": "Time",
+        "params": "",
+        "signature": "now()"
+      },
+      {
+        "name": "monotonic",
+        "returnType": "Time",
+        "params": "",
+        "signature": "monotonic()"
+      },
+      {
+        "name": "sleep",
+        "returnType": "void",
+        "params": "Duration d",
+        "signature": "sleep(Duration d)"
+      },
+      {
+        "name": "since",
+        "returnType": "Duration",
+        "params": "Time t",
+        "signature": "since(Time t)"
+      },
+      {
+        "name": "diff",
+        "returnType": "Duration",
+        "params": "Time a, Time b",
+        "signature": "diff(Time a, Time b)"
+      },
+      {
+        "name": "add",
+        "returnType": "Time",
+        "params": "Time t, Duration d",
+        "signature": "add(Time t, Duration d)"
+      },
+      {
+        "name": "compare",
+        "returnType": "int",
+        "params": "Time a, Time b",
+        "signature": "compare(Time a, Time b)"
+      },
+      {
+        "name": "unix",
+        "returnType": "long",
+        "params": "Time t",
+        "signature": "unix(Time t)"
+      },
+      {
+        "name": "unixNano",
+        "returnType": "long",
+        "params": "Time t",
+        "signature": "unixNano(Time t)"
+      },
+      {
+        "name": "fromUnix",
+        "returnType": "Time",
+        "params": "const long sec",
+        "signature": "fromUnix(const long sec)"
+      },
+      {
+        "name": "fromUnixNano",
+        "returnType": "Time",
+        "params": "const long nsec",
+        "signature": "fromUnixNano(const long nsec)"
+      },
+      {
+        "name": "format",
+        "returnType": "string",
+        "params": "Time t, const string pattern",
+        "signature": "format(Time t, const string pattern)"
+      },
+      {
+        "name": "formatSec",
+        "returnType": "string",
+        "params": "const long sec, const string pattern",
+        "signature": "formatSec(const long sec, const string pattern)"
+      },
+      {
+        "name": "parse",
+        "returnType": "Time",
+        "params": "const string s, const string pattern",
+        "signature": "parse(const string s, const string pattern)"
+      },
+      {
+        "name": "parseToSec",
+        "returnType": "long",
+        "params": "const string s, const string pattern",
+        "signature": "parseToSec(const string s, const string pattern)"
+      },
+      {
+        "name": "durationSecs",
+        "returnType": "long",
+        "params": "Duration d",
+        "signature": "durationSecs(Duration d)"
+      },
+      {
+        "name": "durationMillis",
+        "returnType": "long",
+        "params": "Duration d",
+        "signature": "durationMillis(Duration d)"
+      },
+      {
+        "name": "durationMicros",
+        "returnType": "long",
+        "params": "Duration d",
+        "signature": "durationMicros(Duration d)"
+      },
+      {
+        "name": "durationFormat",
+        "returnType": "string",
+        "params": "Duration d",
+        "signature": "durationFormat(Duration d)"
+      },
+      {
+        "name": "nowSec",
+        "returnType": "long",
+        "params": "",
+        "signature": "nowSec()"
+      },
+      {
+        "name": "durationFormatNsec",
+        "returnType": "string",
+        "params": "const long nsec",
+        "signature": "durationFormatNsec(const long nsec)"
+      }
+    ],
+    "classes": [],
+    "structs": [
+      {
+        "name": "Time",
+        "fields": [
+          {
+            "type": "long",
+            "name": "sec"
+          },
+          {
+            "type": "long",
+            "name": "nsec"
+          }
+        ]
+      },
+      {
+        "name": "Duration",
+        "fields": [
+          {
+            "type": "long",
+            "name": "nsec"
+          }
+        ]
+      }
+    ]
+  },
+  "fly.str": {
+    "functions": [
+      {
+        "name": "len",
+        "returnType": "int",
+        "params": "const string src",
+        "signature": "len(const string src)"
+      },
+      {
+        "name": "byteAt",
+        "returnType": "void",
+        "params": "const string s, const int i, byte out",
+        "signature": "byteAt(const string s, const int i, byte out)"
+      },
+      {
+        "name": "fromBytes",
+        "returnType": "void",
+        "params": "const pointer ptr, const int size, string out",
+        "signature": "fromBytes(const pointer ptr, const int size, string out)"
+      },
+      {
+        "name": "isEmpty",
+        "returnType": "bool",
+        "params": "const string src",
+        "signature": "isEmpty(const string src)"
+      },
+      {
+        "name": "equals",
+        "returnType": "bool",
+        "params": "const string a, const string b",
+        "signature": "equals(const string a, const string b)"
+      },
+      {
+        "name": "equalsIgnoreCase",
+        "returnType": "bool",
+        "params": "const string a, const string b",
+        "signature": "equalsIgnoreCase(const string a, const string b)"
+      },
+      {
+        "name": "startsWith",
+        "returnType": "bool",
+        "params": "const string src, const string prefix",
+        "signature": "startsWith(const string src, const string prefix)"
+      },
+      {
+        "name": "endsWith",
+        "returnType": "bool",
+        "params": "const string src, const string suffix",
+        "signature": "endsWith(const string src, const string suffix)"
+      },
+      {
+        "name": "indexOf",
+        "returnType": "int",
+        "params": "const string src, const string sub",
+        "signature": "indexOf(const string src, const string sub)"
+      },
+      {
+        "name": "lastIndexOf",
+        "returnType": "int",
+        "params": "const string src, const string sub",
+        "signature": "lastIndexOf(const string src, const string sub)"
+      },
+      {
+        "name": "contains",
+        "returnType": "bool",
+        "params": "const string src, const string sub",
+        "signature": "contains(const string src, const string sub)"
+      },
+      {
+        "name": "count",
+        "returnType": "int",
+        "params": "const string src, const string sub",
+        "signature": "count(const string src, const string sub)"
+      },
+      {
+        "name": "toUpper",
+        "returnType": "string",
+        "params": "const string src",
+        "signature": "toUpper(const string src)"
+      },
+      {
+        "name": "toLower",
+        "returnType": "string",
+        "params": "const string src",
+        "signature": "toLower(const string src)"
+      },
+      {
+        "name": "trim",
+        "returnType": "string",
+        "params": "const string src",
+        "signature": "trim(const string src)"
+      },
+      {
+        "name": "trimLeft",
+        "returnType": "string",
+        "params": "const string src",
+        "signature": "trimLeft(const string src)"
+      },
+      {
+        "name": "trimRight",
+        "returnType": "string",
+        "params": "const string src",
+        "signature": "trimRight(const string src)"
+      },
+      {
+        "name": "substring",
+        "returnType": "string",
+        "params": "const string src, const int start, const int end",
+        "signature": "substring(const string src, const int start, const int end)"
+      },
+      {
+        "name": "concat",
+        "returnType": "string",
+        "params": "const string a, const string b",
+        "signature": "concat(const string a, const string b)"
+      },
+      {
+        "name": "repeat",
+        "returnType": "string",
+        "params": "const string src, const int count",
+        "signature": "repeat(const string src, const int count)"
+      },
+      {
+        "name": "replace",
+        "returnType": "string",
+        "params": "const string src, const string from, const string to",
+        "signature": "replace(const string src, const string from, const string to)"
+      },
+      {
+        "name": "convert",
+        "returnType": "string",
+        "params": "const int src",
+        "signature": "convert(const int src)"
+      },
+      {
+        "name": "convertL",
+        "returnType": "string",
+        "params": "const long src",
+        "signature": "convertL(const long src)"
+      }
+    ],
+    "classes": [],
+    "structs": []
+  },
+  "fly.sync": {
+    "functions": [
+      {
+        "name": "spawnThread",
+        "returnType": "Thread",
+        "params": "const pointer fn, const pointer arg, const ulong stack",
+        "signature": "spawnThread(const pointer fn, const pointer arg, const ulong stack)"
+      },
+      {
+        "name": "newMutex",
+        "returnType": "Mutex",
+        "params": "",
+        "signature": "newMutex()"
+      },
+      {
+        "name": "mutexLock",
+        "returnType": "void",
+        "params": "Mutex m",
+        "signature": "mutexLock(Mutex m)"
+      },
+      {
+        "name": "mutexUnlock",
+        "returnType": "void",
+        "params": "Mutex m",
+        "signature": "mutexUnlock(Mutex m)"
+      },
+      {
+        "name": "mutexTryLock",
+        "returnType": "bool",
+        "params": "Mutex m",
+        "signature": "mutexTryLock(Mutex m)"
+      },
+      {
+        "name": "newRWMutex",
+        "returnType": "RWMutex",
+        "params": "",
+        "signature": "newRWMutex()"
+      },
+      {
+        "name": "rwmutexRlock",
+        "returnType": "void",
+        "params": "RWMutex rw",
+        "signature": "rwmutexRlock(RWMutex rw)"
+      },
+      {
+        "name": "rwmutexRunlock",
+        "returnType": "void",
+        "params": "RWMutex rw",
+        "signature": "rwmutexRunlock(RWMutex rw)"
+      },
+      {
+        "name": "rwmutexWlock",
+        "returnType": "void",
+        "params": "RWMutex rw",
+        "signature": "rwmutexWlock(RWMutex rw)"
+      },
+      {
+        "name": "rwmutexWunlock",
+        "returnType": "void",
+        "params": "RWMutex rw",
+        "signature": "rwmutexWunlock(RWMutex rw)"
+      },
+      {
+        "name": "newWaitGroup",
+        "returnType": "WaitGroup",
+        "params": "",
+        "signature": "newWaitGroup()"
+      },
+      {
+        "name": "wgAdd",
+        "returnType": "void",
+        "params": "WaitGroup wg, const int n",
+        "signature": "wgAdd(WaitGroup wg, const int n)"
+      },
+      {
+        "name": "wgDone",
+        "returnType": "void",
+        "params": "WaitGroup wg",
+        "signature": "wgDone(WaitGroup wg)"
+      },
+      {
+        "name": "wgWait",
+        "returnType": "void",
+        "params": "WaitGroup wg",
+        "signature": "wgWait(WaitGroup wg)"
+      },
+      {
+        "name": "newOnce",
+        "returnType": "Once",
+        "params": "",
+        "signature": "newOnce()"
+      },
+      {
+        "name": "onceAcquire",
+        "returnType": "bool",
+        "params": "Once o",
+        "signature": "onceAcquire(Once o)"
+      },
+      {
+        "name": "onceRelease",
+        "returnType": "void",
+        "params": "Once o",
+        "signature": "onceRelease(Once o)"
+      },
+      {
+        "name": "newSemaphore",
+        "returnType": "Semaphore",
+        "params": "const int initial",
+        "signature": "newSemaphore(const int initial)"
+      },
+      {
+        "name": "semaphoreAcquire",
+        "returnType": "void",
+        "params": "Semaphore s",
+        "signature": "semaphoreAcquire(Semaphore s)"
+      },
+      {
+        "name": "semaphoreRelease",
+        "returnType": "void",
+        "params": "Semaphore s",
+        "signature": "semaphoreRelease(Semaphore s)"
+      },
+      {
+        "name": "semaphoreTryAcquire",
+        "returnType": "bool",
+        "params": "Semaphore s",
+        "signature": "semaphoreTryAcquire(Semaphore s)"
+      }
+    ],
+    "classes": [],
+    "structs": [
+      {
+        "name": "Thread",
+        "fields": [
+          {
+            "type": "int",
+            "name": "id"
+          }
+        ]
+      },
+      {
+        "name": "Mutex",
+        "fields": [
+          {
+            "type": "pointer",
+            "name": "ptr"
+          }
+        ]
+      },
+      {
+        "name": "RWMutex",
+        "fields": [
+          {
+            "type": "pointer",
+            "name": "state_ptr"
+          },
+          {
+            "type": "pointer",
+            "name": "waiters_ptr"
+          }
+        ]
+      },
+      {
+        "name": "WaitGroup",
+        "fields": [
+          {
+            "type": "pointer",
+            "name": "ptr"
+          }
+        ]
+      },
+      {
+        "name": "Once",
+        "fields": [
+          {
+            "type": "pointer",
+            "name": "ptr"
+          }
+        ]
+      },
+      {
+        "name": "Semaphore",
+        "fields": [
+          {
+            "type": "pointer",
+            "name": "ptr"
+          }
+        ]
+      }
+    ]
+  },
+  "fly.targz": {
+    "functions": [
+      {
+        "name": "inflate",
+        "returnType": "string",
+        "params": "const string data, int errOut",
+        "signature": "inflate(const string data, int errOut)"
+      },
+      {
+        "name": "isGzip",
+        "returnType": "bool",
+        "params": "const string data",
+        "signature": "isGzip(const string data)"
+      },
+      {
+        "name": "gunzip",
+        "returnType": "string",
+        "params": "const string data, int errOut",
+        "signature": "gunzip(const string data, int errOut)"
+      },
+      {
+        "name": "tarOpen",
+        "returnType": "pointer",
+        "params": "const string data",
+        "signature": "tarOpen(const string data)"
+      },
+      {
+        "name": "tarNext",
+        "returnType": "bool",
+        "params": "const pointer h",
+        "signature": "tarNext(const pointer h)"
+      },
+      {
+        "name": "tarName",
+        "returnType": "string",
+        "params": "const pointer h",
+        "signature": "tarName(const pointer h)"
+      },
+      {
+        "name": "tarSize",
+        "returnType": "long",
+        "params": "const pointer h",
+        "signature": "tarSize(const pointer h)"
+      },
+      {
+        "name": "tarType",
+        "returnType": "int",
+        "params": "const pointer h",
+        "signature": "tarType(const pointer h)"
+      },
+      {
+        "name": "tarIsFile",
+        "returnType": "bool",
+        "params": "const pointer h",
+        "signature": "tarIsFile(const pointer h)"
+      },
+      {
+        "name": "tarIsDir",
+        "returnType": "bool",
+        "params": "const pointer h",
+        "signature": "tarIsDir(const pointer h)"
+      },
+      {
+        "name": "tarData",
+        "returnType": "string",
+        "params": "const pointer h",
+        "signature": "tarData(const pointer h)"
+      },
+      {
+        "name": "tarErr",
+        "returnType": "int",
+        "params": "const pointer h",
+        "signature": "tarErr(const pointer h)"
+      },
+      {
+        "name": "tarFree",
+        "returnType": "void",
+        "params": "const pointer h",
+        "signature": "tarFree(const pointer h)"
+      },
+      {
+        "name": "safeName",
+        "returnType": "bool",
+        "params": "const string name",
+        "signature": "safeName(const string name)"
+      },
+      {
+        "name": "extractTar",
+        "returnType": "bool",
+        "params": "const string data, const string destDir, int errOut",
+        "signature": "extractTar(const string data, const string destDir, int errOut)"
+      },
+      {
+        "name": "extractTarGz",
+        "returnType": "bool",
+        "params": "const string archivePath, const string destDir, int errOut",
+        "signature": "extractTarGz(const string archivePath, const string destDir, int errOut)"
+      }
+    ],
+    "classes": [],
+    "structs": []
+  }
+}

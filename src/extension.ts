@@ -7,16 +7,28 @@ import { FlyHoverProvider }          from './providers/hover';
 import { FlyCompletionProvider }     from './providers/completion';
 import { FlyDiagnosticsProvider }    from './providers/diagnostics';
 import { startLspClient, stopLspClient } from './lsp/client';
-import { findFlyInstallations, detectVersion, deriveLspPath } from './compiler/finder';
+import { findFlyInstallations, detectVersion, deriveLspPath, deriveDapPath } from './compiler/finder';
 import { createStatusBar, refresh as refreshStatusBar } from './compiler/statusBar';
-import { resolveFlypPath, resolveFlyTomlDir } from './flyp/finder';
-import { FlyTomlCompletionProvider }    from './flyp/completions';
-import { FlyTomlHoverProvider }         from './flyp/hover';
-import { FlyTomlDiagnosticsProvider }   from './flyp/diagnostics';
-import { FlyTomlCodeLensProvider }      from './flyp/codeLens';
-import { FlyTomlDocumentLinkProvider }  from './flyp/documentLink';
+import { resolveFlyPath, resolveManifestDir, isManifest, MANIFEST_GLOB } from './project/finder';
+import { ManifestCompletionProvider }   from './project/completions';
+import { ManifestHoverProvider }        from './project/hover';
+import { ManifestDiagnosticsProvider }  from './project/diagnostics';
+import { ManifestCodeLensProvider }     from './project/codeLens';
+import { ManifestDocumentLinkProvider } from './project/documentLink';
 
 const FLY_SELECTOR: vscode.DocumentSelector = { language: 'fly', scheme: 'file' };
+
+// The driver takes no positional file arguments: it compiles a source
+// directory. A single file builds via --entry <file> (discovery is skipped)
+// with its directory as the import root.
+function singleFileArgs(filePath: string): string[] {
+    return ['--entry', filePath, '--src-dir', path.dirname(filePath)];
+}
+
+// A manifest IS a .fly file, so it is selected by name rather than by language.
+const MANIFEST_SELECTOR: vscode.DocumentSelector = {
+    language: 'fly', scheme: 'file', pattern: MANIFEST_GLOB,
+};
 
 export function activate(context: vscode.ExtensionContext): void {
     // ── Compiler selection command ─────────────────────────────────────────
@@ -109,8 +121,10 @@ export function activate(context: vscode.ExtensionContext): void {
             const compiler   = cfg.get<string>('compilerPath', 'fly');
             const extraArgs  = cfg.get<string>('buildArgs', '').trim();
             const filePath   = editor.document.uri.fsPath;
-            const quotedFile = `"${filePath.replace(/"/g, '\\"')}"`;
-            const cmd        = [compiler, quotedFile, extraArgs].filter(Boolean).join(' ');
+            const q          = (s: string) => `"${s.replace(/"/g, '\\"')}"`;
+            const cmd        = [compiler, '--entry', q(filePath),
+                                '--src-dir', q(path.dirname(filePath)),
+                                extraArgs].filter(Boolean).join(' ');
 
             const task = new vscode.Task(
                 { type: 'fly', task: 'build' },
@@ -148,7 +162,8 @@ export function activate(context: vscode.ExtensionContext): void {
             const baseName   = path.basename(filePath, '.fly');
             const outPath    = path.join(os.tmpdir(), baseName);
             const q          = (s: string) => `"${s.replace(/"/g, '\\"')}"`;
-            const compileCmd = `${q(compiler)} ${q(filePath)} -o ${q(outPath)}`;
+            const compileCmd = `${q(compiler)} --entry ${q(filePath)} ` +
+                               `--src-dir ${q(path.dirname(filePath))} -o ${q(outPath)}`;
             const runCmd     = q(outPath);
 
             if (!runTerminal || runTerminal.exitStatus !== undefined) {
@@ -160,102 +175,93 @@ export function activate(context: vscode.ExtensionContext): void {
         }),
     );
 
-    // ── fly.toml providers ────────────────────────────────────────────────
-    const TOML_SEL: vscode.DocumentSelector = { language: 'flyp-toml', scheme: 'file' };
-
+    // ── Manifest.fly providers ────────────────────────────────────────────
     context.subscriptions.push(
-        vscode.languages.registerCompletionItemProvider(TOML_SEL, new FlyTomlCompletionProvider()),
-        vscode.languages.registerHoverProvider(TOML_SEL, new FlyTomlHoverProvider()),
-        vscode.languages.registerCodeLensProvider(TOML_SEL, new FlyTomlCodeLensProvider()),
-        vscode.languages.registerDocumentLinkProvider(TOML_SEL, new FlyTomlDocumentLinkProvider()),
+        vscode.languages.registerCompletionItemProvider(MANIFEST_SELECTOR, new ManifestCompletionProvider()),
+        vscode.languages.registerHoverProvider(MANIFEST_SELECTOR, new ManifestHoverProvider()),
+        vscode.languages.registerCodeLensProvider(MANIFEST_SELECTOR, new ManifestCodeLensProvider()),
+        vscode.languages.registerDocumentLinkProvider(MANIFEST_SELECTOR, new ManifestDocumentLinkProvider()),
     );
 
-    const tomlDiag         = vscode.languages.createDiagnosticCollection('flyp-toml');
-    const tomlDiagProvider = new FlyTomlDiagnosticsProvider(tomlDiag);
-    context.subscriptions.push(tomlDiag);
+    const manifestDiag         = vscode.languages.createDiagnosticCollection('fly-manifest');
+    const manifestDiagProvider = new ManifestDiagnosticsProvider(manifestDiag);
+    context.subscriptions.push(manifestDiag);
 
     context.subscriptions.push(
         vscode.workspace.onDidOpenTextDocument(doc => {
-            if (doc.languageId === 'flyp-toml') tomlDiagProvider.run(doc);
+            if (isManifest(doc)) manifestDiagProvider.run(doc);
         }),
         vscode.workspace.onDidSaveTextDocument(doc => {
-            if (doc.languageId === 'flyp-toml') tomlDiagProvider.run(doc);
+            if (isManifest(doc)) manifestDiagProvider.run(doc);
         }),
         vscode.workspace.onDidCloseTextDocument(doc => {
-            if (doc.languageId === 'flyp-toml') tomlDiagProvider.clear(doc.uri);
+            if (isManifest(doc)) manifestDiagProvider.clear(doc.uri);
         }),
     );
     for (const doc of vscode.workspace.textDocuments) {
-        if (doc.languageId === 'flyp-toml') tomlDiagProvider.run(doc);
+        if (isManifest(doc)) manifestDiagProvider.run(doc);
     }
 
-    // ── flyp commands ─────────────────────────────────────────────────────
-    let flypTerminal: vscode.Terminal | undefined;
+    // ── Project commands (fly build / run / test / …) ─────────────────────
+    //
+    // The compiler IS the package manager: there is no separate binary, and the
+    // subcommands below are exactly the ones the self-hosted driver implements.
+    // Anything else it rejects as an unknown argument, so nothing here offers a
+    // button that cannot work.
+    let projectTerminal: vscode.Terminal | undefined;
 
-    function runFlyp(args: string[]): void {
-        const projectDir = resolveFlyTomlDir();
+    function runFly(args: string[]): void {
+        const projectDir = resolveManifestDir();
         if (!projectDir) {
-            vscode.window.showWarningMessage('Flyp: could not find fly.toml in this workspace.');
+            vscode.window.showWarningMessage(
+                'Fly: no Manifest.fly found in this workspace. Run "Fly: Init Project" to create one.');
             return;
         }
-        const flyp = resolveFlypPath();
-        const cmd  = [flyp, ...args].join(' ');
+        const fly = resolveFlyPath();
+        const cmd = [fly, ...args].join(' ');
 
-        if (!flypTerminal || flypTerminal.exitStatus !== undefined) {
-            flypTerminal = vscode.window.createTerminal('Flyp');
+        if (!projectTerminal || projectTerminal.exitStatus !== undefined) {
+            projectTerminal = vscode.window.createTerminal('Fly');
         }
-        flypTerminal.show(true);
-        flypTerminal.sendText(`cd "${projectDir.replace(/"/g, '\\"')}" && ${cmd}`);
+        projectTerminal.show(true);
+        // The driver reads the manifest from the CURRENT directory only.
+        projectTerminal.sendText(`cd "${projectDir.replace(/"/g, '\\"')}" && ${cmd}`);
     }
 
-    /** Returns ['--profile', name] if a non-empty profile is configured, else []. */
+    /**
+     * Returns ['--release'] when the release profile is selected, else [].
+     *
+     * Only debug and release exist: the manifest reader does not consume the
+     * schema's `profiles` field yet, so a custom `--profile <name>` would fall
+     * back to the built-in defaults anyway.
+     */
     function profileArgs(): string[] {
-        const p = vscode.workspace.getConfiguration('fly').get<string>('flypProfile', '').trim();
-        return p ? ['--profile', p] : [];
-    }
-
-    /** Returns ['-j', N] if fly.flypJobs > 0, else []. */
-    function jobsArgs(): string[] {
-        const j = vscode.workspace.getConfiguration('fly').get<number>('flypJobs', 0);
-        return j > 0 ? ['-j', String(j)] : [];
-    }
-
-    /** Returns ['--offline'] if fly.flypOffline is true, else []. */
-    function offlineArgs(): string[] {
-        return vscode.workspace.getConfiguration('fly').get<boolean>('flypOffline', false)
-            ? ['--offline'] : [];
-    }
-
-    /** Returns ['--cross', triple] if fly.flypCrossTriple is non-empty, else []. */
-    function crossArgs(): string[] {
-        const t = vscode.workspace.getConfiguration('fly').get<string>('flypCrossTriple', '').trim();
-        return t ? ['--cross', t] : [];
+        const p = vscode.workspace.getConfiguration('fly').get<string>('projectProfile', '').trim();
+        return p === 'release' ? ['--release'] : [];
     }
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('fly.flypBuild', async () => {
-            const projectDir = resolveFlyTomlDir();
+        vscode.commands.registerCommand('fly.pkgBuild', async () => {
+            const projectDir = resolveManifestDir();
             if (!projectDir) {
-                vscode.window.showWarningMessage('Flyp: could not find fly.toml in this workspace.');
+                vscode.window.showWarningMessage(
+                    'Fly: no Manifest.fly found in this workspace. Run "Fly: Init Project" to create one.');
                 return;
             }
-            const flyp  = resolveFlypPath();
+            const fly   = resolveFlyPath();
             const cfg   = vscode.workspace.getConfiguration('fly');
-            const extra = cfg.get<string>('flypBuildArgs', '').trim();
-            const force = cfg.get<boolean>('flypForceRebuild', false);
-            const buildArgs = ['build', ...profileArgs(), ...jobsArgs(), ...offlineArgs(),
-                               ...crossArgs(), ...(extra ? extra.split(/\s+/) : [])];
-            // If force rebuild, prepend a clean for the active profile.
-            const cleanCmd = force
-                ? `${flyp} clean ${profileArgs().join(' ')} && `
-                : '';
-            const cmd = `cd "${projectDir.replace(/"/g, '\\"')}" && ${cleanCmd}${flyp} ${buildArgs.join(' ')}`;
+            const extra = cfg.get<string>('projectBuildArgs', '').trim();
+            const force = cfg.get<boolean>('projectForceRebuild', false);
+            // --force bypasses the per-target fingerprint cache; no clean needed.
+            const buildArgs = ['build', ...profileArgs(), ...(force ? ['--force'] : []),
+                               ...(extra ? extra.split(/\s+/) : [])];
+            const cmd = `cd "${projectDir.replace(/"/g, '\\"')}" && ${fly} ${buildArgs.join(' ')}`;
 
             const task = new vscode.Task(
-                { type: 'fly', task: 'flyp-build' },
+                { type: 'fly', task: 'project-build' },
                 vscode.TaskScope.Workspace,
-                'Flyp Build',
-                'flyp',
+                'Fly Build Project',
+                'fly',
                 new vscode.ShellExecution(cmd),
                 '$fly',
             );
@@ -266,112 +272,82 @@ export function activate(context: vscode.ExtensionContext): void {
             };
             await vscode.tasks.executeTask(task);
         }),
-        vscode.commands.registerCommand('fly.flypRun',  () => runFlyp(['run',  ...profileArgs(), ...offlineArgs()])),
-        vscode.commands.registerCommand('fly.flypTest', () => runFlyp(['test', ...profileArgs(), ...offlineArgs()])),
-        vscode.commands.registerCommand('fly.flypDeploy', async () => {
-            const cfg     = vscode.workspace.getConfiguration('fly');
-            const profile = cfg.get<string>('flypProfile', '').trim();
-            const token   = cfg.get<string>('flypToken',   '').trim();
-            const args    = [
-                'deploy',
-                ...(profile ? ['--registry', profile] : []),
-                ...(token   ? ['--token',    token]   : []),
-            ];
-            runFlyp(args);
-        }),
-        vscode.commands.registerCommand('fly.flypVendor', async () => {
-            const cfg     = vscode.workspace.getConfiguration('fly');
-            const profile = cfg.get<string>('flypProfile', '').trim();
-            const token   = cfg.get<string>('flypToken',   '').trim();
-            const args    = [
-                'vendor',
-                ...(profile ? ['--registry', profile] : []),
-                ...(token   ? ['--token',    token]   : []),
-            ];
-            runFlyp(args);
-        }),
-        vscode.commands.registerCommand('fly.flypToggleOffline', async () => {
-            const cfg     = vscode.workspace.getConfiguration('fly');
-            const current = cfg.get<boolean>('flypOffline', false);
-            await cfg.update('flypOffline', !current, vscode.ConfigurationTarget.Workspace);
-            vscode.window.showInformationMessage(
-                `Flyp offline mode ${!current ? 'enabled' : 'disabled'}.`
-            );
-        }),
-        vscode.commands.registerCommand('fly.flypClean', async () => {
-            const cfg     = vscode.workspace.getConfiguration('fly');
-            const profile = cfg.get<string>('flypProfile', '').trim();
-            const args    = profile ? ['clean', '--profile', profile] : ['clean'];
-            runFlyp(args);
-        }),
-        vscode.commands.registerCommand('fly.flypUpgrade', async () => {
-            // Ask whether to upgrade all or a specific package.
-            const choice = await vscode.window.showQuickPick(
-                [
-                    { label: 'Upgrade all',    description: 'Upgrade all tag-pinned git deps to the latest semver tag' },
-                    { label: 'Upgrade one…',   description: 'Choose a specific package to upgrade' },
-                    { label: 'Dry run',        description: 'Preview upgrades without writing changes' },
-                ],
-                { title: 'Flyp: Upgrade Dependencies', placeHolder: 'Select upgrade scope' },
-            );
-            if (!choice) return;
-
-            if (choice.label === 'Dry run') {
-                runFlyp(['upgrade', '--dry-run']);
-            } else if (choice.label === 'Upgrade one…') {
-                const name = await vscode.window.showInputBox({
-                    prompt: 'Dependency name to upgrade',
-                    placeHolder: 'e.g. fly-std',
-                });
-                if (!name) return;
-                runFlyp(['upgrade', name]);
-            } else {
-                runFlyp(['upgrade']);
+        vscode.commands.registerCommand('fly.pkgRun',  () => runFly(['run',  ...profileArgs()])),
+        vscode.commands.registerCommand('fly.pkgTest', () => runFly(['test', ...profileArgs()])),
+        vscode.commands.registerCommand('fly.pkgClean', () => runFly(['clean', ...profileArgs()])),
+        vscode.commands.registerCommand('fly.pkgLock', () => runFly(['lock'])),
+        vscode.commands.registerCommand('fly.pkgInit', async () => {
+            const folders = vscode.workspace.workspaceFolders;
+            if (!folders || folders.length === 0) {
+                vscode.window.showWarningMessage('Fly: open a folder first.');
+                return;
             }
-        }),
-        vscode.commands.registerCommand('fly.flypDoctor', () => runFlyp(['doctor'])),
-        vscode.commands.registerCommand('fly.flypLock', () => runFlyp(['lock'])),
-        vscode.commands.registerCommand('fly.flypSelectProfile', async () => {
-            const current = vscode.workspace.getConfiguration('fly').get<string>('flypProfile', '') || 'debug';
+            const root = folders[0].uri.fsPath;
+            const name = await vscode.window.showInputBox({
+                prompt: 'Package name',
+                value: path.basename(root),
+                validateInput: v => /^[a-z0-9_-]+$/.test(v) ? undefined : 'Name must match [a-z0-9_-]+',
+            });
+            if (!name) return;
+            const version = await vscode.window.showInputBox({
+                prompt: 'Package version', value: '0.1.0',
+                validateInput: v => /^\d+\.\d+\.\d+$/.test(v) ? undefined : 'Use MAJOR.MINOR.PATCH',
+            });
+            if (!version) return;
 
-            // Try to read available profiles from fly.toml
-            const projectDir = resolveFlyTomlDir();
-            let profiles = ['debug', 'release'];
-            if (projectDir) {
-                try {
-                    const tomlText = require('fs').readFileSync(
-                        require('path').join(projectDir, 'fly.toml'), 'utf8'
-                    ) as string;
-                    const inProfiles = /^\[profiles\]/m.test(tomlText);
-                    if (inProfiles) {
-                        const found = [...tomlText.matchAll(/^([a-z][a-z0-9_-]*)\s*=\s*\{/gm)]
-                            .map(m => m[1])
-                            .filter(n => n !== 'debug' && n !== 'release');
-                        profiles = ['debug', 'release', ...found];
-                    }
-                } catch { /* ignore */ }
+            const fly = resolveFlyPath();
+            if (!projectTerminal || projectTerminal.exitStatus !== undefined) {
+                projectTerminal = vscode.window.createTerminal('Fly');
             }
+            projectTerminal.show(true);
+            projectTerminal.sendText(
+                `cd "${root.replace(/"/g, '\\"')}" && ${fly} init --name ${name} --version ${version}`);
+        }),
+        vscode.commands.registerCommand('fly.pkgRemove', async () => {
+            const name = await vscode.window.showInputBox({
+                prompt: 'Dependency to remove',
+                validateInput: v => /^[a-z0-9_-]+$/.test(v) ? undefined : 'Name must match [a-z0-9_-]+',
+            });
+            if (!name) return;
+            runFly(['remove', name]);
+        }),
+        vscode.commands.registerCommand('fly.pkgWhy', async () => {
+            const name = await vscode.window.showInputBox({
+                prompt: 'Explain why this package is in the dependency graph',
+                validateInput: v => /^[a-z0-9_-]+$/.test(v) ? undefined : 'Name must match [a-z0-9_-]+',
+            });
+            if (!name) return;
+            runFly(['why', name]);
+        }),
+        vscode.commands.registerCommand('fly.pkgSelectProfile', async () => {
+            const current = vscode.workspace.getConfiguration('fly')
+                .get<string>('projectProfile', '') || 'debug';
 
-            const items = profiles.map(p => ({
+            // Only these two: the manifest reader does not consume the schema's
+            // `profiles` field yet, so a custom name would change nothing.
+            const items = ['debug', 'release'].map(p => ({
                 label:       p,
                 description: p === current ? '$(check) active' : undefined,
             }));
 
             const picked = await vscode.window.showQuickPick(items, {
-                title:       'Flyp: Select Build Profile',
-                placeHolder: 'Profile used by Flyp: Build / Run / Test',
+                title:       'Fly: Select Build Profile',
+                placeHolder: 'Profile used by Fly: Build / Run / Test',
             });
             if (!picked) return;
 
             const value = picked.label === 'debug' ? '' : picked.label;
             await vscode.workspace.getConfiguration('fly').update(
-                'flypProfile', value, vscode.ConfigurationTarget.Workspace,
+                'projectProfile', value, vscode.ConfigurationTarget.Workspace,
             );
-            vscode.window.showInformationMessage(`Flyp profile set to "${picked.label}".`);
+            vscode.window.showInformationMessage(`Fly profile set to "${picked.label}".`);
         }),
-        // Used by CodeLens actions in fly.toml (Update / Remove dependency).
-        vscode.commands.registerCommand('fly.flypRunCmd', (args: string[]) => runFlyp(args)),
-        vscode.commands.registerCommand('fly.flypAdd',  async () => {
+        // Used by the CodeLens actions in Manifest.fly (Why / Remove dependency).
+        vscode.commands.registerCommand('fly.pkgRunCmd', (args: string[]) => runFly(args)),
+        // `fly add` writes a GIT dependency: it requires exactly one of
+        // --tag/--branch/--rev and takes no version, so a registry dependency is
+        // added by editing `dependencies` in the manifest directly.
+        vscode.commands.registerCommand('fly.pkgAdd',  async () => {
             const name = await vscode.window.showInputBox({
                 prompt: 'Dependency name (e.g. my-lib)',
                 validateInput: v => /^[a-z0-9_-]+$/.test(v) ? undefined : 'Name must match [a-z0-9_-]+',
@@ -396,7 +372,17 @@ export function activate(context: vscode.ExtensionContext): void {
             const refValue = await vscode.window.showInputBox({ prompt: refLabel });
             if (!refValue) return;
 
-            runFlyp(['add', name, '--git', gitUrl, `--${refType}`, refValue]);
+            const kind = await vscode.window.showQuickPick(
+                [
+                    { label: 'dependency',     description: 'runtime dependency' },
+                    { label: 'dev-dependency', description: 'development and testing only' },
+                ],
+                { placeHolder: 'Dependency kind' },
+            );
+            if (!kind) return;
+
+            runFly(['add', name, '--git', gitUrl, `--${refType}`, refValue,
+                    ...(kind.label === 'dev-dependency' ? ['--dev'] : [])]);
         }),
     );
 
@@ -496,7 +482,30 @@ export function activate(context: vscode.ExtensionContext): void {
         flyWatcher.onDidCreate(uri => diagProvider.runForPath(uri.fsPath)),
     );
 
-    // ── Debug command (compile with --debug, launch via LLDB) ─────────────
+    // ── Debug adapter: lldb-dap bundled with the Fly toolchain ────────────
+    // The toolchain ships lldb-dap next to fly in bin/, so the adapter is
+    // always the one matching the installed compiler — no third-party
+    // debugger extension needed.
+    context.subscriptions.push(
+        vscode.debug.registerDebugAdapterDescriptorFactory('fly', {
+            createDebugAdapterDescriptor(): vscode.ProviderResult<vscode.DebugAdapterDescriptor> {
+                const compiler = vscode.workspace.getConfiguration('fly')
+                    .get<string>('compilerPath', 'fly');
+                const dap = deriveDapPath(compiler);
+                if (path.dirname(dap) !== '.' && !fs.existsSync(dap)) {
+                    void vscode.window.showErrorMessage(
+                        `Fly: lldb-dap not found at "${dap}". It ships with the Fly ` +
+                        `toolchain (bin/lldb-dap) — check fly.compilerPath, or run ` +
+                        `"Fly: Select Compiler".`,
+                    );
+                    return undefined;
+                }
+                return new vscode.DebugAdapterExecutable(dap, []);
+            },
+        }),
+    );
+
+    // ── Debug command (compile with --debug, launch via lldb-dap) ─────────
     context.subscriptions.push(
         vscode.commands.registerCommand('fly.debugFile', async () => {
             const editor = vscode.window.activeTextEditor;
@@ -512,16 +521,13 @@ export function activate(context: vscode.ExtensionContext): void {
             const filePath   = editor.document.uri.fsPath;
             const baseName   = path.basename(filePath, '.fly');
             const outPath    = path.join(os.tmpdir(), baseName);
-            const q          = (s: string) => `"${s.replace(/"/g, '\\"')}"`;
-            const compileCmd = [q(compiler), q(filePath), debugArgs, '-o', q(outPath)]
-                .filter(Boolean).join(' ');
 
-            // Compile first; on success launch the LLDB debugger.
-            const proc = require('child_process').execSync;
+            // Compile first; on success launch the debugger.
             try {
                 require('child_process').execFileSync(
                     compiler,
-                    [filePath, ...debugArgs.split(/\s+/).filter(Boolean), '-o', outPath],
+                    [...singleFileArgs(filePath),
+                     ...debugArgs.split(/\s+/).filter(Boolean), '-o', outPath],
                     { stdio: 'inherit' },
                 );
             } catch {
@@ -532,7 +538,7 @@ export function activate(context: vscode.ExtensionContext): void {
             }
 
             await vscode.debug.startDebugging(undefined, {
-                type:    'lldb',
+                type:    'fly',
                 request: 'launch',
                 name:    'Fly Debug',
                 program: outPath,

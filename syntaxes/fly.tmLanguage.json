@@ -49,8 +49,7 @@
       "beginCaptures": { "0": { "name": "punctuation.definition.string.begin.fly" } },
       "endCaptures":   { "0": { "name": "punctuation.definition.string.end.fly" } },
       "patterns": [
-        { "include": "#escape-sequences" },
-        { "name": "invalid.illegal.fly", "match": "\\\\." }
+        { "include": "#escape-sequences" }
       ]
     },
 
@@ -66,8 +65,9 @@
     },
 
     "escape-sequences": {
+      "comment": "Fly string literals keep escapes RAW: a backslash only shields the next character from ending the literal (so \\\" embeds a quote); no sequence is decoded",
       "name": "constant.character.escape.fly",
-      "match": "\\\\([nrt\\\\'\"0]|x[0-9a-fA-F]{2}|u[0-9a-fA-F]{4})"
+      "match": "\\\\."
     },
 
     "annotations": {
@@ -99,7 +99,7 @@
 
     "keywords-other": {
       "name": "keyword.other.fly",
-      "match": "\\b(namespace|import|as|new|delete|unique|shared|weak)\\b"
+      "match": "\\b(namespace|import|as|new)\\b"
     },
 
     "out-keyword": {
@@ -124,7 +124,7 @@
 
     "builtin-types": {
       "name": "support.type.fly",
-      "match": "\\b(bool|byte|char|short|ushort|int|uint|long|ulong|float|double|string|void|error)\\b"
+      "match": "\\b(bool|byte|char|short|ushort|int|uint|long|ulong|pointer|float|double|complex|string|void|error)\\b"
     },
 
     "constants": {
@@ -141,11 +141,8 @@
     },
 
     "numbers": {
+      "comment": "No hex/binary/octal literals in Fly — decimal integers and floats only",
       "patterns": [
-        {
-          "name": "constant.numeric.hex.fly",
-          "match": "\\b0[xX][0-9a-fA-F]+\\b"
-        },
         {
           "name": "constant.numeric.float.fly",
           "match": "\\b[0-9]+\\.[0-9]*\\b"
