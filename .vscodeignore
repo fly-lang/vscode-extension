@@ -10,7 +10,13 @@ out/**/*.js.map
 *.vsix
 
 # Node / npm
-node_modules/
+#
+# node_modules/ must NOT be excluded: this extension is compiled with plain tsc,
+# it is NOT bundled, so `vscode-languageclient` has to travel inside the .vsix or
+# the lazy require() in src/lsp/client.ts fails at runtime and the language
+# server never starts (the user only sees the "module not found" warning).
+# vsce ships production dependencies only — devDependencies are pruned for it.
+# Only re-add the exclusion together with a bundler (esbuild/webpack).
 package-lock.json
 
 # Version control
