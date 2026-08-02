@@ -401,12 +401,13 @@
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "package": "vsce package"
+    "package": "vsce package",
+    "publish": "vsce publish --oidc"
   },
   "devDependencies": {
     "@types/node": "^25.9.1",
     "@types/vscode": "^1.80.0",
-    "@vscode/vsce": "^2.22.0",
+    "@vscode/vsce": "^3.9.2",
     "typescript": "^5.3.0"
   }
 }

@@ -5,6 +5,14 @@ on:
   # Release is ONLY triggered manually from the Actions tab.
   # It reads the version from package.json, creates the tag, and publishes.
   workflow_dispatch:
+    inputs:
+      auth:
+        description: "Marketplace authentication method"
+        type: choice
+        default: oidc
+        options:
+          - oidc   # trusted publishing, no stored secret (preferred)
+          - pat    # VSCE_PAT secret — org-scoped, dies 2026-12-01
 
 jobs:
 
@@ -22,7 +30,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
 
       - name: Install dependencies
         run: npm install
@@ -42,8 +50,9 @@ jobs:
           echo "vsix=vscode-fly-${VERSION}.vsix" >> $GITHUB_OUTPUT
           echo "Resolved version: ${VERSION}"
 
+      # Use the scoped name: bare `vsce` on npm is the deprecated pre-2022 package.
       - name: Package (.vsix)
-        run: npx vsce package --out vscode-fly-${{ steps.meta.outputs.version }}.vsix
+        run: npx @vscode/vsce package --out vscode-fly-${{ steps.meta.outputs.version }}.vsix
 
       - uses: actions/upload-artifact@v4
         with:
@@ -60,6 +69,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write   # needed to create tag and GitHub Release
+      id-token: write   # needed for OIDC trusted publishing to the Marketplace
 
     steps:
       - uses: actions/checkout@v4
@@ -112,9 +122,24 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
 
-      - name: Publish to VS Code Marketplace
-        run: npx vsce publish --packagePath ${{ needs.build.outputs.vsix }}
+      # ── Marketplace publish ──────────────────────────────────────────────
+      # Preferred: OIDC trusted publishing. No secret is stored anywhere — vsce
+      # asks GitHub for an id-token scoped to the marketplace.visualstudio.com
+      # audience and trades it for a short-lived Marketplace credential.
+      # Requires `id-token: write` above AND a trusted-publishing policy on the
+      # fly-lang publisher naming this repo + this workflow file.
+      # NOTE: --oidc never falls back to a PAT; if the exchange fails, it fails.
+      - name: Publish to VS Code Marketplace (OIDC)
+        if: inputs.auth == 'oidc'
+        run: npx --yes '@vscode/vsce@^3.9.2' publish --oidc --packagePath ${{ needs.build.outputs.vsix }}
+
+      # Fallback while the OIDC policy is not yet in place.
+      # VSCE_PAT must be an ORGANIZATION-SCOPED PAT (Marketplace > Manage).
+      # Global "All accessible organizations" PATs stop working 2026-12-01.
+      - name: Publish to VS Code Marketplace (PAT)
+        if: inputs.auth == 'pat'
+        run: npx --yes '@vscode/vsce@^3.9.2' publish --packagePath ${{ needs.build.outputs.vsix }}
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}

@@ -33,39 +33,69 @@ Runs only when the workflow is dispatched from `main`:
 2. Creates and pushes the tag.
 3. Downloads the `.vsix` artifact from the `build` job.
 4. Creates a GitHub Release with the `.vsix` attached.
-5. Publishes to the VS Code Marketplace via `vsce publish`.
+5. Publishes to the VS Code Marketplace via `vsce publish` — see [Marketplace authentication](#marketplace-authentication).
 
 ---
 
 ## How to publish a new release
 
 1. Bump the version in `package.json` (e.g. `0.2.0` → `0.3.0`) and push the commit to `main`.
-2. Open the repository on GitHub → **Actions** → **VSCode Extension** → **Run workflow** → **Run workflow** (confirm).
-3. The workflow reads the version from `package.json`, checks that the tag does not already exist, creates the tag, builds, and publishes.
+2. Open the repository on GitHub → **Actions** → **VSCode Extension** → **Run workflow**.
+3. Pick the **Marketplace authentication method**: `oidc` (default) or `pat`. See below.
+4. **Run workflow** (confirm). The workflow reads the version from `package.json`, checks that
+   the tag does not already exist, creates the tag, builds, and publishes.
 
 > **If the tag already exists** the release job fails immediately with an explicit error message. Bump the version in `package.json` and re-run.
 
 ---
 
-## Repository secrets
+## Marketplace authentication
 
-Configure these under **GitHub → repository → Settings → Secrets and variables → Actions → New repository secret**.
+Azure DevOps is retiring **global** Personal Access Tokens — the "All accessible organizations"
+kind, which is exactly what Marketplace publishing has always required. **They stop working on
+2026-12-01.** There are two supported ways forward; the workflow offers both as a dispatch input.
 
-### `VSCE_PAT` — VS Code Marketplace Personal Access Token
+### `oidc` — trusted publishing (preferred, no secret at all)
 
-Required by the `release` job to publish to the Marketplace.
+`vsce publish --oidc` asks GitHub Actions for an OIDC id-token scoped to the
+`marketplace.visualstudio.com` audience and exchanges it for a short-lived Marketplace
+credential. Nothing long-lived is stored, so there is no token to rotate and no secret to leak.
 
-**How to create it:**
+**Requirements** (all already in place in the workflow):
 
-1. Sign in to [dev.azure.com](https://dev.azure.com) with the Microsoft account linked to your [VS Code Marketplace publisher](https://marketplace.visualstudio.com/manage).
-2. Click your avatar (top-right) → **Personal access tokens → New Token**.
-3. Fill in the fields:
+- `@vscode/vsce` **≥ 3.9.x** — the flag does not exist in 2.x.
+- The `release` job declares `permissions: id-token: write`.
+- A **trusted publishing policy** on the `fly-lang` publisher at
+  [marketplace.visualstudio.com/manage](https://marketplace.visualstudio.com/manage), naming:
+  - owner/repository — `fly-lang/vscode-extension`
+  - workflow file — `publish-marketplace.yml`
+
+  If the publisher management page does not offer trusted publishing yet, use `pat` below and
+  switch over once it appears.
+
+> `--oidc` does **not** fall back to a PAT. If the token exchange fails the publish step fails —
+> which is the intended behaviour, not a bug to work around.
+
+### `pat` — organization-scoped Personal Access Token (fallback, expires 2026-12-01)
+
+Only differs from the old instructions in the **Organization** field: pick your specific
+organization, *not* "All accessible organizations".
+
+1. Sign in to [dev.azure.com](https://dev.azure.com) with the Microsoft account linked to the
+   [Marketplace publisher](https://marketplace.visualstudio.com/manage).
+2. Avatar (top-right) → **Personal access tokens → New Token**.
+3. Fill in:
    - **Name**: `VSCE_PAT` (or any descriptive name)
-   - **Organization**: `All accessible organizations`
-   - **Expiration**: choose a duration (maximum 1 year; set a calendar reminder to rotate it)
-   - **Scopes**: select **Custom defined** → under *Marketplace* check **Manage**
-4. Click **Create** and copy the token immediately — it is shown only once.
-5. Add it to the repository as a secret named exactly **`VSCE_PAT`**.
+   - **Organization**: **your organization** — an org-scoped token. Global tokens are retired.
+   - **Expiration**: max 1 year; set a calendar reminder to rotate
+   - **Scopes**: **Custom defined** → *Marketplace* → **Manage**
+4. **Create**, then copy the token immediately — it is shown only once.
+5. Add it under **GitHub → repository → Settings → Secrets and variables → Actions →
+   New repository secret**, named exactly **`VSCE_PAT`**.
+
+> If publishing rejects an org-scoped token, the publisher is not associated with that
+> organization. Open the org once in the Azure DevOps portal with the publisher account, then
+> re-issue the token.
 
 ### `GITHUB_TOKEN`
 
