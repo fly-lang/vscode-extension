@@ -90,6 +90,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: vscode-fly-vsix
+
+      # Publish FIRST: if it fails (OIDC policy, network, ...) no tag and no GitHub
+      # Release exist yet, so simply re-running the workflow retries cleanly. The
+      # Marketplace itself rejects a version it already has, so a re-run after a
+      # successful publish cannot publish twice.
+      #
+      # OIDC trusted publishing: no secret is stored anywhere — vsce asks GitHub
+      # for an id-token scoped to marketplace.visualstudio.com and trades it for a
+      # short-lived Marketplace credential. Needs `id-token: write` above AND a
+      # trusted-publishing policy on the fly-lang publisher naming this repo and
+      # this workflow file (publish-marketplace.yml). It never falls back to a PAT.
+      # The --oidc flag exists only in @vscode/vsce 4.x (3.9.x rejects it).
+      - name: Publish to VS Code Marketplace (OIDC)
+        run: npx --yes @vscode/vsce@^4.1.1 publish --oidc --packagePath ${{ needs.build.outputs.vsix }}
+
       - name: Create and push tag
         run: |
           VERSION=${{ needs.build.outputs.version }}
@@ -97,10 +119,6 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git tag "v${VERSION}"
           git push origin "v${VERSION}"
-
-      - uses: actions/download-artifact@v4
-        with:
-          name: vscode-fly-vsix
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -122,15 +140,3 @@ jobs:
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ github.token }}
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-
-      # OIDC trusted publishing: no secret is stored anywhere — vsce asks GitHub
-      # for an id-token scoped to marketplace.visualstudio.com and trades it for a
-      # short-lived Marketplace credential. Needs `id-token: write` above AND a
-      # trusted-publishing policy on the fly-lang publisher naming this repo and
-      # this workflow file (publish-marketplace.yml). It never falls back to a PAT.
-      - name: Publish to VS Code Marketplace (OIDC)
-        run: npx --yes '@vscode/vsce@^3.9.2' publish --oidc --packagePath ${{ needs.build.outputs.vsix }}

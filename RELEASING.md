@@ -29,10 +29,11 @@ The pipeline is defined in [`.github/workflows/publish-marketplace.yml`](.github
 
 Runs only on `main`, never on a pull request, and only when `tag_exists` is `false`:
 
-1. Creates and pushes the tag `v<version>`.
-2. Creates a GitHub Release with the `.vsix` attached and auto-generated release notes.
-3. Publishes to the VS Code Marketplace with `vsce publish --oidc` — see
-   [Marketplace authentication](#marketplace-authentication).
+1. Publishes to the VS Code Marketplace with `vsce publish --oidc` — see
+   [Marketplace authentication](#marketplace-authentication). **First**, so a failed publish
+   leaves no tag behind and the workflow can simply be re-run.
+2. Creates and pushes the tag `v<version>`.
+3. Creates a GitHub Release with the `.vsix` attached and auto-generated release notes.
 
 A merge that does **not** change the version finds the tag already there and skips the
 release; the run stays green.
@@ -46,9 +47,9 @@ release; the run stays green.
 3. Watch **Actions** → **VSCode Extension**: the `release` job runs on the merge commit.
 
 > If you forget the bump, nothing is published — bump in a follow-up PR.
-> If the publish step fails after the tag was created (e.g. OIDC policy problem), the tag
-> now exists, so a re-run would skip the release: delete the tag and the GitHub Release,
-> then re-run the workflow from **Run workflow**.
+> If the publish step fails (e.g. OIDC policy problem) no tag exists yet: fix the cause and use
+> **Run workflow** to retry. The Marketplace rejects a version it already has, so a retry cannot
+> publish twice.
 
 ---
 
@@ -65,7 +66,7 @@ credential. Nothing long-lived is stored, so there is no token to rotate and no 
 
 **Requirements** (all already in place in the workflow):
 
-- `@vscode/vsce` **≥ 3.9.x** — the flag does not exist in 2.x.
+- `@vscode/vsce` **≥ 4.x** (the workflow pins `^4.1.1`) — the `--oidc` flag does not exist in 3.9.x or earlier.
 - The `release` job declares `permissions: id-token: write`.
 - A **trusted publishing policy** on the `fly-lang` publisher at
   [marketplace.visualstudio.com/manage](https://marketplace.visualstudio.com/manage), naming:
@@ -73,7 +74,7 @@ credential. Nothing long-lived is stored, so there is no token to rotate and no 
   - workflow file — `publish-marketplace.yml`
 
   The policy must exist **before** the first automatic release, otherwise the publish step
-  fails (after the tag and GitHub Release were already created — see the note above).
+  fails (nothing is tagged yet, so it can be retried).
   If a ruleset restricts tag creation, allow `github-actions[bot]` to create `v*` tags.
 
 > `--oidc` does **not** fall back to a PAT. If the token exchange fails the publish step fails —
