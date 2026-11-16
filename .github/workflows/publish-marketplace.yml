@@ -107,7 +107,7 @@ jobs:
       # for an id-token scoped to marketplace.visualstudio.com and trades it for a
       # short-lived Marketplace credential. Needs `id-token: write` above AND a
       # trusted-publishing policy on the fly-lang publisher naming this repo and
-      # this workflow file (publish-marketplace.yml). It never falls back to a PAT.
+      # this workflow file (publish-marketplace.yml).
       # The --oidc flag exists only in @vscode/vsce 4.x (3.9.x rejects it).
       - name: Publish to VS Code Marketplace (OIDC)
         run: npx --yes @vscode/vsce@^4.1.1 publish --oidc --packagePath ${{ needs.build.outputs.vsix }}
