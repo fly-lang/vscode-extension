@@ -38,13 +38,15 @@ const PATTERNS: { re: RegExp; kind: vscode.SymbolKind; group: number }[] = [
 ];
 
 // Keywords that should never be treated as function names — the compiler's
-// full reserved-word list (TokenKinds.fly) minus nothing, plus contextual 'out'.
+// full reserved-word list (TokenKinds.fly). `out` is NOT among them: since the
+// return value travels on `return`, it is an ordinary identifier again (the
+// standard library uses it as a parameter name for C-ABI output parameters).
 const SKIP_NAMES = new Set([
     'abstract', 'as', 'bool', 'break', 'byte', 'case', 'char', 'class',
     'complex', 'const', 'continue', 'default', 'double', 'elsif', 'else',
     'enum', 'error', 'fail', 'false', 'final', 'float', 'for', 'handle',
     'if', 'import', 'in', 'int', 'interface', 'long', 'namespace', 'new',
-    'null', 'out', 'pointer', 'private', 'protected', 'public', 'return',
+    'null', 'pointer', 'private', 'protected', 'public', 'return',
     'short', 'static', 'string', 'struct', 'suite', 'switch', 'test',
     'true', 'uint', 'ulong', 'unset', 'ushort', 'void', 'while',
 ]);

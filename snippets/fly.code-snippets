@@ -63,7 +63,7 @@
     "prefix": "fnr",
     "body": [
       "${1:int} ${2:name}(${3}) {",
-      "\tout = $0",
+      "\treturn $0",
       "}"
     ],
     "description": "Function with return type — assign to 'out' to return a value"
@@ -73,7 +73,7 @@
     "prefix": "pfnr",
     "body": [
       "public ${1:int} ${2:name}(${3}) {",
-      "\tout = $0",
+      "\treturn $0",
       "}"
     ],
     "description": "Public function with return type — assign to 'out' to return a value"
@@ -83,7 +83,7 @@
     "prefix": "fng",
     "body": [
       "${1:T} ${2:name}<${1:T}>(const ${1:T} ${3:v}) {",
-      "\tout = $0",
+      "\treturn $0",
       "}"
     ],
     "description": "Generic function — type parameter T, inferred at call site"
@@ -273,22 +273,22 @@
     "description": "Class instance — heap-allocated, released automatically at scope exit unless ownership escapes"
   },
 
-  "Out (return value)": {
-    "prefix": "out",
-    "body": ["out = $0"],
-    "description": "Assign return value — 'out' is the implicit return holder in functions with a return type"
+  "Return (value)": {
+    "prefix": "ret",
+    "body": ["return $0"],
+    "description": "Return a value — written into the caller's slot, then ret. Every path of a value function must return"
   },
 
-  "Out indexed (multi-return)": {
-    "prefix": "outi",
-    "body": ["out[${1:0}] = $0"],
-    "description": "Assign indexed return value for multi-return functions: int,int func()"
+  "Return (multi-value)": {
+    "prefix": "retm",
+    "body": ["return ${1:a}, ${2:b}"],
+    "description": "Return one value per declared return type, in order: int,int func()"
   },
 
   "Return (early exit)": {
-    "prefix": "ret",
+    "prefix": "rete",
     "body": ["return"],
-    "description": "Exit a void function early (no value — use 'out =' to return a value)"
+    "description": "Exit a void function early — a bare return carries no value"
   },
 
   "Fail": {
@@ -374,7 +374,7 @@
     "prefix": "getset",
     "body": [
       "public ${1:int} get${2:Name}() {",
-      "\tout = ${3:_field}",
+      "\treturn ${3:_field}",
       "}",
       "",
       "public void set${2:Name}(const ${1:int} value) {",

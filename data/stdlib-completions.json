@@ -118,7 +118,40 @@
     "classes": [
       {
         "name": "CLang",
-        "methods": []
+        "methods": [
+          {
+            "name": "CLang",
+            "params": "const string libPath"
+          },
+          {
+            "name": "call",
+            "params": "string sym, const Args args"
+          },
+          {
+            "name": "call",
+            "params": "string sym, const Args args, int out"
+          },
+          {
+            "name": "call",
+            "params": "string sym, const Args args, long out"
+          },
+          {
+            "name": "call",
+            "params": "string sym, const Args args, float out"
+          },
+          {
+            "name": "call",
+            "params": "string sym, const Args args, double out"
+          },
+          {
+            "name": "call",
+            "params": "string sym, const Args args, bool out"
+          },
+          {
+            "name": "call",
+            "params": "string sym, const Args args, pointer out"
+          }
+        ]
       }
     ],
     "structs": [
@@ -2783,19 +2816,79 @@
       },
       {
         "name": "FileReader",
-        "methods": []
+        "methods": [
+          {
+            "name": "read",
+            "params": "Buf buf, const ulong n"
+          },
+          {
+            "name": "close",
+            "params": ""
+          }
+        ]
       },
       {
         "name": "FileWriter",
-        "methods": []
+        "methods": [
+          {
+            "name": "write",
+            "params": "Buf buf, const ulong n"
+          },
+          {
+            "name": "flush",
+            "params": ""
+          },
+          {
+            "name": "close",
+            "params": ""
+          }
+        ]
       },
       {
         "name": "BufReader",
-        "methods": []
+        "methods": [
+          {
+            "name": "refill",
+            "params": ""
+          },
+          {
+            "name": "available",
+            "params": ""
+          },
+          {
+            "name": "bufAt",
+            "params": ""
+          },
+          {
+            "name": "takeByte",
+            "params": "byte b"
+          },
+          {
+            "name": "read",
+            "params": "Buf buf, const ulong n"
+          },
+          {
+            "name": "close",
+            "params": ""
+          }
+        ]
       },
       {
         "name": "BufWriter",
-        "methods": []
+        "methods": [
+          {
+            "name": "write",
+            "params": "Buf buf, const ulong n"
+          },
+          {
+            "name": "flush",
+            "params": ""
+          },
+          {
+            "name": "close",
+            "params": ""
+          }
+        ]
       }
     ],
     "structs": [
@@ -3169,15 +3262,15 @@
       },
       {
         "name": "byteAt",
-        "returnType": "void",
-        "params": "const string s, const int i, byte out",
-        "signature": "byteAt(const string s, const int i, byte out)"
+        "returnType": "byte",
+        "params": "const string s, const int i",
+        "signature": "byteAt(const string s, const int i)"
       },
       {
         "name": "fromBytes",
-        "returnType": "void",
-        "params": "const pointer ptr, const int size, string out",
-        "signature": "fromBytes(const pointer ptr, const int size, string out)"
+        "returnType": "string",
+        "params": "const pointer ptr, const int size",
+        "signature": "fromBytes(const pointer ptr, const int size)"
       },
       {
         "name": "isEmpty",

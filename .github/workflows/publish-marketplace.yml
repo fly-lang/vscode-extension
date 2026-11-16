@@ -1,29 +1,34 @@
 name: VSCode Extension
 
 on:
+  # Pull requests: build + test only (never publishes — fork PRs get no id-token).
+  pull_request:
+    branches: [main]
 
-  # Release is ONLY triggered manually from the Actions tab.
-  # It reads the version from package.json, creates the tag, and publishes.
+  # Push to main (i.e. a merged PR): build + test, then publish IF package.json
+  # carries a version that has no tag yet. A merge that does not bump the version
+  # builds, finds the tag already there, and skips the release without failing.
+  push:
+    branches: [main]
+
+  # Manual re-run of the same pipeline (e.g. after a failed publish).
   workflow_dispatch:
-    inputs:
-      auth:
-        description: "Marketplace authentication method"
-        type: choice
-        default: oidc
-        options:
-          - oidc   # trusted publishing, no stored secret (preferred)
-          - pat    # VSCE_PAT secret — org-scoped, dies 2026-12-01
+
+# Never run two releases at once; never cancel one that is already publishing.
+concurrency:
+  group: vscode-extension-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
 
-  # ── Build & package ──────────────────────────────────────────────────────
-  # Runs on every push to main and on every manual dispatch.
+  # ── Build, test & package ────────────────────────────────────────────────
   build:
     runs-on: ubuntu-latest
 
     outputs:
-      version: ${{ steps.meta.outputs.version }}
-      vsix:    ${{ steps.meta.outputs.vsix }}
+      version:    ${{ steps.meta.outputs.version }}
+      vsix:       ${{ steps.meta.outputs.vsix }}
+      tag_exists: ${{ steps.meta.outputs.tag_exists }}
 
     steps:
       - uses: actions/checkout@v4
@@ -41,7 +46,7 @@ jobs:
       - name: Unit tests (pure core modules)
         run: node tests/unit.js
 
-      - name: Read version from package.json
+      - name: Read version and check its tag
         id: meta
         run: |
           VERSION=$(node -p "require('./package.json').version")
@@ -51,7 +56,13 @@ jobs:
           fi
           echo "version=${VERSION}"              >> $GITHUB_OUTPUT
           echo "vsix=vscode-fly-${VERSION}.vsix" >> $GITHUB_OUTPUT
-          echo "Resolved version: ${VERSION}"
+          if git ls-remote --exit-code --tags origin "refs/tags/v${VERSION}" > /dev/null 2>&1; then
+            echo "tag_exists=true"  >> $GITHUB_OUTPUT
+            echo "Version ${VERSION}: tag v${VERSION} already exists — no release will be made."
+          else
+            echo "tag_exists=false" >> $GITHUB_OUTPUT
+            echo "Version ${VERSION}: tag v${VERSION} is new — eligible for release on main."
+          fi
 
       # Use the scoped name: bare `vsce` on npm is the deprecated pre-2022 package.
       - name: Package (.vsix)
@@ -64,29 +75,20 @@ jobs:
           if-no-files-found: error
 
   # ── Tag + GitHub Release + Marketplace publish ───────────────────────────
-  # Runs ONLY on manual workflow_dispatch.
-  # Fails immediately if the tag for the current version already exists.
+  # Only for a push (or manual run) on main whose version has no tag yet.
   release:
     needs: [build]
-    if: github.ref_name == 'main'
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      github.event_name != 'pull_request' &&
+      needs.build.outputs.tag_exists == 'false'
     runs-on: ubuntu-latest
     permissions:
-      contents: write   # needed to create tag and GitHub Release
-      id-token: write   # needed for OIDC trusted publishing to the Marketplace
+      contents: write   # create the tag and the GitHub Release
+      id-token: write   # OIDC trusted publishing to the Marketplace
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0   # full history so git ls-remote sees all tags
-
-      - name: Fail if tag already exists
-        run: |
-          VERSION=${{ needs.build.outputs.version }}
-          if git ls-remote --exit-code --tags origin "refs/tags/v${VERSION}" > /dev/null 2>&1; then
-            echo "::error::Tag v${VERSION} already exists. Bump the version in package.json before releasing."
-            exit 1
-          fi
-          echo "Tag v${VERSION} is available — proceeding with release."
 
       - name: Create and push tag
         run: |
@@ -105,11 +107,9 @@ jobs:
         with:
           tag_name: v${{ needs.build.outputs.version }}
           name: "Fly VSCode Extension v${{ needs.build.outputs.version }}"
+          generate_release_notes: true
           body: |
             ## Fly Language Support for VSCode — v${{ needs.build.outputs.version }}
-
-            ### What's included
-            - AUpdate lsp path
 
             ### Install
             Download `${{ needs.build.outputs.vsix }}` then run:
@@ -127,22 +127,10 @@ jobs:
         with:
           node-version: "22"
 
-      # ── Marketplace publish ──────────────────────────────────────────────
-      # Preferred: OIDC trusted publishing. No secret is stored anywhere — vsce
-      # asks GitHub for an id-token scoped to the marketplace.visualstudio.com
-      # audience and trades it for a short-lived Marketplace credential.
-      # Requires `id-token: write` above AND a trusted-publishing policy on the
-      # fly-lang publisher naming this repo + this workflow file.
-      # NOTE: --oidc never falls back to a PAT; if the exchange fails, it fails.
+      # OIDC trusted publishing: no secret is stored anywhere — vsce asks GitHub
+      # for an id-token scoped to marketplace.visualstudio.com and trades it for a
+      # short-lived Marketplace credential. Needs `id-token: write` above AND a
+      # trusted-publishing policy on the fly-lang publisher naming this repo and
+      # this workflow file (publish-marketplace.yml). It never falls back to a PAT.
       - name: Publish to VS Code Marketplace (OIDC)
-        if: inputs.auth == 'oidc'
         run: npx --yes '@vscode/vsce@^3.9.2' publish --oidc --packagePath ${{ needs.build.outputs.vsix }}
-
-      # Fallback while the OIDC policy is not yet in place.
-      # VSCE_PAT must be an ORGANIZATION-SCOPED PAT (Marketplace > Manage).
-      # Global "All accessible organizations" PATs stop working 2026-12-01.
-      - name: Publish to VS Code Marketplace (PAT)
-        if: inputs.auth == 'pat'
-        run: npx --yes '@vscode/vsce@^3.9.2' publish --packagePath ${{ needs.build.outputs.vsix }}
-        env:
-          VSCE_PAT: ${{ secrets.VSCE_PAT }}

@@ -387,13 +387,24 @@ export function activate(context: vscode.ExtensionContext): void {
     // ── LSP client (hover on symbols, go-to-definition, find references) ──
     startLspClient(context);
 
+    // Whether the language server owns the features it implements. Everything
+    // below that DUPLICATES one of them registers only when it is off.
+    const lspActive = vscode.workspace.getConfiguration('fly').get<boolean>('enableLsp', true);
+
     // ── Document outline (OUTLINE panel + breadcrumbs) ────────────────────
-    context.subscriptions.push(
-        vscode.languages.registerDocumentSymbolProvider(
-            FLY_SELECTOR,
-            new FlyDocumentSymbolProvider(),
-        ),
-    );
+    //
+    // FALLBACK ONLY: fly-lsp answers textDocument/documentSymbol from the real
+    // AST, and VS Code shows every provider's symbols as its own group — with
+    // both registered the outline listed each declaration twice. The regex
+    // provider stays for editing without the server.
+    if (!lspActive) {
+        context.subscriptions.push(
+            vscode.languages.registerDocumentSymbolProvider(
+                FLY_SELECTOR,
+                new FlyDocumentSymbolProvider(),
+            ),
+        );
+    }
 
     // ── Hover documentation for keywords and built-in types ───────────────
     context.subscriptions.push(
@@ -419,7 +430,6 @@ export function activate(context: vscode.ExtensionContext): void {
     // and running the compiler here too would duplicate every squiggle and
     // double the work. Same policy as vscode-go, which disables its legacy
     // buildOnSave/vetOnSave diagnostics while gopls is active.
-    const lspActive = vscode.workspace.getConfiguration('fly').get<boolean>('enableLsp', true);
     if (!lspActive) {
     const diagCollection = vscode.languages.createDiagnosticCollection('fly');
     context.subscriptions.push(diagCollection);

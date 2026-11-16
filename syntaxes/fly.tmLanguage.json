@@ -12,7 +12,6 @@
     { "include": "#generic-type-params" },
     { "include": "#keywords-control" },
     { "include": "#keywords-other" },
-    { "include": "#out-keyword" },
     { "include": "#modifiers" },
     { "include": "#builtin-types" },
     { "include": "#constants" },
@@ -100,12 +99,6 @@
     "keywords-other": {
       "name": "keyword.other.fly",
       "match": "\\b(namespace|import|as|new)\\b"
-    },
-
-    "out-keyword": {
-      "comment": "'out' is the implicit return-value holder, declared in any function that has a return type",
-      "name": "variable.language.fly",
-      "match": "\\bout\\b"
     },
 
     "generic-type-params": {

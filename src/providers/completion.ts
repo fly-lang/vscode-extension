@@ -34,7 +34,8 @@ type StdlibDb = Record<string, NamespaceEntry>;
 
 function loadDb(extensionPath: string): StdlibDb {
     // data/ is included in the packaged .vsix (src/ is not). Regenerate with
-    // scripts/gen-stdlib-completions.js against a Fly checkout's std sources.
+    // scripts/gen-stdlib-completions.js, which reads the `.fly.h` headers of an
+    // INSTALLED toolchain (fly.compilerPath), not a source checkout.
     const dbPath = path.join(extensionPath, 'data', 'stdlib-completions.json');
     try {
         return JSON.parse(fs.readFileSync(dbPath, 'utf8')) as StdlibDb;

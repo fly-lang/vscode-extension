@@ -1,6 +1,8 @@
 # Releasing the Fly VS Code Extension
 
-This document covers the CI/CD pipeline, how to cut a release, and the repository secrets that must be configured.
+Releases are **automatic**: merging a pull request that bumps `version` in `package.json`
+into `main` builds, tags, publishes a GitHub Release and publishes to the Marketplace.
+`main` is a locked branch — all changes arrive through pull requests.
 
 ---
 
@@ -10,52 +12,52 @@ The pipeline is defined in [`.github/workflows/publish-marketplace.yml`](.github
 
 | Trigger | Jobs executed |
 |---|---|
-| **Manual dispatch** (Actions tab) | `build` → `release` — packages the `.vsix`, creates tag, GitHub Release, and publishes to Marketplace |
-
-The release is **never automatic**. It only runs when you explicitly click **Run workflow** in the Actions tab.
+| **Pull request** to `main` | `build` only — compile, unit tests, package. Never publishes. |
+| **Push to `main`** (a merged PR) | `build`, then `release` **only if** `v<version>` has no tag yet |
+| **Manual dispatch** (Actions tab) | same as a push to `main` — use it to re-run after a failed publish |
 
 ### `build` job
 
-Runs on every manual dispatch:
-
-1. Checks out the repository.
-2. Installs dependencies with `npm install`.
-3. Compiles TypeScript with `npm run compile`.
-4. Reads the version from `package.json`.
-5. Packages the extension with `vsce package`, producing `vscode-fly-<version>.vsix`.
-6. Uploads the `.vsix` as a workflow artifact.
+1. Checks out the repository, installs dependencies (`npm install`), compiles (`npm run compile`).
+2. Runs the unit tests (`node tests/unit.js`).
+3. Reads the version from `package.json` and checks with `git ls-remote` whether the tag
+   `v<version>` already exists (`tag_exists` output).
+4. Packages the extension with `vsce package`, producing `vscode-fly-<version>.vsix`, and uploads it
+   as a workflow artifact.
 
 ### `release` job
 
-Runs only when the workflow is dispatched from `main`:
+Runs only on `main`, never on a pull request, and only when `tag_exists` is `false`:
 
-1. Verifies that the git tag `v<version>` does not already exist — fails immediately if it does.
-2. Creates and pushes the tag.
-3. Downloads the `.vsix` artifact from the `build` job.
-4. Creates a GitHub Release with the `.vsix` attached.
-5. Publishes to the VS Code Marketplace via `vsce publish` — see [Marketplace authentication](#marketplace-authentication).
+1. Creates and pushes the tag `v<version>`.
+2. Creates a GitHub Release with the `.vsix` attached and auto-generated release notes.
+3. Publishes to the VS Code Marketplace with `vsce publish --oidc` — see
+   [Marketplace authentication](#marketplace-authentication).
+
+A merge that does **not** change the version finds the tag already there and skips the
+release; the run stays green.
 
 ---
 
 ## How to publish a new release
 
-1. Bump the version in `package.json` (e.g. `0.2.0` → `0.3.0`) and push the commit to `main`.
-2. Open the repository on GitHub → **Actions** → **VSCode Extension** → **Run workflow**.
-3. Pick the **Marketplace authentication method**: `oidc` (default) or `pat`. See below.
-4. **Run workflow** (confirm). The workflow reads the version from `package.json`, checks that
-   the tag does not already exist, creates the tag, builds, and publishes.
+1. In a pull request, bump `version` in `package.json` (e.g. `0.7.0` → `0.7.1`).
+2. Merge the pull request into `main`.
+3. Watch **Actions** → **VSCode Extension**: the `release` job runs on the merge commit.
 
-> **If the tag already exists** the release job fails immediately with an explicit error message. Bump the version in `package.json` and re-run.
+> If you forget the bump, nothing is published — bump in a follow-up PR.
+> If the publish step fails after the tag was created (e.g. OIDC policy problem), the tag
+> now exists, so a re-run would skip the release: delete the tag and the GitHub Release,
+> then re-run the workflow from **Run workflow**.
 
 ---
 
 ## Marketplace authentication
 
-Azure DevOps is retiring **global** Personal Access Tokens — the "All accessible organizations"
-kind, which is exactly what Marketplace publishing has always required. **They stop working on
-2026-12-01.** There are two supported ways forward; the workflow offers both as a dispatch input.
+Publishing uses **OIDC trusted publishing** only. The old Personal Access Token route is
+gone: Azure DevOps retires global PATs on **2026-12-01**.
 
-### `oidc` — trusted publishing (preferred, no secret at all)
+### `oidc` — trusted publishing (no secret at all)
 
 `vsce publish --oidc` asks GitHub Actions for an OIDC id-token scoped to the
 `marketplace.visualstudio.com` audience and exchanges it for a short-lived Marketplace
@@ -70,32 +72,12 @@ credential. Nothing long-lived is stored, so there is no token to rotate and no 
   - owner/repository — `fly-lang/vscode-extension`
   - workflow file — `publish-marketplace.yml`
 
-  If the publisher management page does not offer trusted publishing yet, use `pat` below and
-  switch over once it appears.
+  The policy must exist **before** the first automatic release, otherwise the publish step
+  fails (after the tag and GitHub Release were already created — see the note above).
+  If a ruleset restricts tag creation, allow `github-actions[bot]` to create `v*` tags.
 
 > `--oidc` does **not** fall back to a PAT. If the token exchange fails the publish step fails —
 > which is the intended behaviour, not a bug to work around.
-
-### `pat` — organization-scoped Personal Access Token (fallback, expires 2026-12-01)
-
-Only differs from the old instructions in the **Organization** field: pick your specific
-organization, *not* "All accessible organizations".
-
-1. Sign in to [dev.azure.com](https://dev.azure.com) with the Microsoft account linked to the
-   [Marketplace publisher](https://marketplace.visualstudio.com/manage).
-2. Avatar (top-right) → **Personal access tokens → New Token**.
-3. Fill in:
-   - **Name**: `VSCE_PAT` (or any descriptive name)
-   - **Organization**: **your organization** — an org-scoped token. Global tokens are retired.
-   - **Expiration**: max 1 year; set a calendar reminder to rotate
-   - **Scopes**: **Custom defined** → *Marketplace* → **Manage**
-4. **Create**, then copy the token immediately — it is shown only once.
-5. Add it under **GitHub → repository → Settings → Secrets and variables → Actions →
-   New repository secret**, named exactly **`VSCE_PAT`**.
-
-> If publishing rejects an org-scoped token, the publisher is not associated with that
-> organization. Open the org once in the Azure DevOps portal with the publisher account, then
-> re-issue the token.
 
 ### `GITHUB_TOKEN`
 

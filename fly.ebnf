@@ -61,10 +61,10 @@ qualified_name = identifier , { "." , identifier } ;
 
 (* ── Return type & type parameters (generics) ──────────────────────────── *)
 
-(* A function with a return type implicitly declares 'out' inside its body.
-     Single return:    out = expr
-     Multi-return:     out[0] = expr , out[1] = expr , ...
-   'out' is a reserved identifier; it may NOT be used as a variable name. *)
+(* A function with a return type hands its value back with 'return expr' — one
+   expression per declared return type — and must do so on every path. The value
+   is written into a hidden output parameter the compiler appends to the
+   signature, so it is never copied out of the callee frame. *)
 
 return_type     = type_ref , { "," , type_ref } ;     (* comma-separated for multi-return *)
 
@@ -73,7 +73,7 @@ type_param_list = identifier , { "," , identifier } ; (* e.g. <T>, <K,V> *)
 (* ── Function declaration ───────────────────────────────────────────────── *)
 
 (* return_type is optional — functions without it are void.
-   type_param_list makes the function generic: T identity<T>(const T v) { out = v } *)
+   type_param_list makes the function generic: T identity<T>(const T v) { return v } *)
 function_decl = [ modifier_list ]
               , [ return_type ]
               , identifier
@@ -118,11 +118,13 @@ field_decl = [ modifier_list ]
            , identifier
            , [ "=" , expr ] ;
 
-(* Method with optional return type and generics — same rules as function_decl *)
+(* Method — the return type is omitted only by a constructor. Unlike a function a
+   method takes NO type parameters of its own: neither compiler parses
+   `T make<T>(T v)` inside a class (a class is made generic at the class level,
+   `class Box<T>`, and its methods use that T). *)
 method_decl = [ modifier_list ]
             , [ return_type ]
             , identifier
-            , [ "<" , type_param_list , ">" ]
             , "(" , [ param_list ] , ")"
             , block ;
 
@@ -149,7 +151,6 @@ block = "{" , { stmt } , "}" ;
 (* ── Statements ─────────────────────────────────────────────────────────── *)
 
 stmt = var_decl_stmt
-     | out_assign
      | assign_stmt
      | delete_stmt
      | if_stmt
@@ -167,11 +168,6 @@ stmt = var_decl_stmt
 
 var_decl_stmt = [ "const" ] , type_ref , identifier , [ "=" , expr ] ;
 
-(* 'out' is the implicit return-value holder; write to it instead of return.
-   out = expr          -- single return type
-   out[0] = expr       -- first value of a multi-return function
-   out[1] = expr       -- second value, etc. *)
-out_assign = "out" , [ "[" , integer_literal , "]" ] , "=" , expr ;
 
 assign_stmt = lvalue , assign_op , expr ;
 
@@ -208,8 +204,8 @@ default_clause = "default" ,       ":" , { stmt } ;
 (* test {} — inline observer block written inside a production function.
    In release builds the block is completely stripped (zero IR, zero overhead).
    In test mode (fly --test) it executes only when an active suite is running.
-   The block has read-only access to all enclosing-function locals and 'out';
-   writing to outer-scope variables is a compile error. *)
+   The block has read-only access to all enclosing-function locals; writing to
+   outer-scope variables is a compile error. *)
 test_block = "test" , "{" , { stmt } , "}" ;
 
 (* suite — top-level test driver (syntactically parallel to class).
@@ -244,10 +240,10 @@ while_stmt = "while" , condition , ( block | stmt ) ;
 
 (* ── Jump statements ────────────────────────────────────────────────────── *)
 
-(* 'return' exits a void function early (no value).
-   Functions with a return type carry their result in 'out'; they may still
-   use 'return' to exit early before 'out' has been set. *)
-return_stmt   = "return" ;
+(* 'return' leaves the function. In a function with a return type it carries the
+   value — one expression per declared type, the first starting on the keyword's
+   own line — and every path must reach one. In a void function it takes none. *)
+return_stmt   = "return" , [ expr , { "," , expr } ] ;
 break_stmt    = "break" ;
 continue_stmt = "continue" ;
 
@@ -316,8 +312,7 @@ postfix_expr = expr , "++"
 
 arg_list = expr , { "," , expr } ;
 
-primary = "out" , [ "[" , expr , "]" ]
-        | identifier
+primary = identifier
         | literal
         | array_literal
         | "(" , expr , ")" ;

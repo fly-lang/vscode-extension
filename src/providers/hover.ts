@@ -7,9 +7,9 @@ interface HoverEntry {
 
 const KEYWORD_DOCS: Record<string, HoverEntry> = {
     // Return value
-    out: {
-        detail: '(return holder) out',
-        doc: 'Implicitly declared inside any function that has a return type. Assign to it to set the return value.\n\n```fly\nint double(const int n) {\n    out = n * 2\n}\n```\n\nFor multi-return functions use `out[0]`, `out[1]`, …',
+    return: {
+        detail: '(keyword) return',
+        doc: 'Hands a value back, and leaves the function.\n\n```fly\nint double(const int n) {\n    return n * 2\n}\n```\n\nThe value is written into a hidden output parameter the compiler adds to the signature, so it is never copied out of the callee frame. A function with a return type must return on **every path**; a multi-return function returns one value per declared type (`return a, b`). In a `void` function a bare `return` exits early.',
     },
 
     // Error handling
@@ -49,7 +49,7 @@ const KEYWORD_DOCS: Record<string, HoverEntry> = {
     },
     test: {
         detail: '(keyword) test',
-        doc: 'Inline test block — written directly inside a production function to observe its local state read-only.\n\n```fly\nstring classify(const int n) {\n    if n > 0 {\n        out = "positive"\n        test {\n            assertTrue(out == "positive")\n        }\n    }\n}\n```\n\nIn **release** builds the block is completely stripped — zero IR, zero overhead.\nIn **test** mode (`fly --test`, or `fly test` in a project) it executes only when an active suite is running. Writing to outer-scope variables is a compile error.',
+        doc: 'Inline test block — written directly inside a production function to observe its local state read-only.\n\n```fly\nstring classify(const int n) {\n    string label = "zero"\n    if n > 0 {\n        label = "positive"\n        test {\n            assertTrue(label == "positive")\n        }\n    }\n    return label\n}\n```\n\nIn **release** builds the block is completely stripped — zero IR, zero overhead.\nIn **test** mode (`fly --test`, or `fly test` in a project) it executes only when an active suite is running. Writing to outer-scope variables is a compile error.',
     },
     case: {
         detail: '(keyword) case',
@@ -71,7 +71,7 @@ const KEYWORD_DOCS: Record<string, HoverEntry> = {
     char:   { detail: '(type) char',   doc: 'Character type. Single ASCII/UTF-8 byte.' },
     pointer: { detail: '(type) pointer', doc: 'Opaque machine address. Use `pointer` for raw addresses and OS/runtime handles — never `long`; there is no numeric cast between pointers and integers.' },
     complex: { detail: '(type) complex', doc: 'Complex number type (real and imaginary floating-point parts).' },
-    void:   { detail: '(type) void',   doc: 'Void return type. Functions without a return type declaration are implicitly void.' },
+    void:   { detail: '(type) void',   doc: 'Void return type: the function hands back no value. A return type is mandatory, so a function that produces nothing declares `void` explicitly.' },
 };
 
 export class FlyHoverProvider implements vscode.HoverProvider {
