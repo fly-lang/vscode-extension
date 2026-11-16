@@ -71,6 +71,8 @@ credential. Nothing long-lived is stored, so there is no token to rotate and no 
   [marketplace.visualstudio.com/manage](https://marketplace.visualstudio.com/manage), naming:
   - owner/repository — `fly-lang/vscode-extension`
   - workflow file — `publish-marketplace.yml`
+  - environment — `production` (the `release` job declares `environment: production`; if the
+    policy names an environment and the job does not, the exchange fails with 401)
 
   The policy must exist **before** the first automatic release, otherwise the publish step
   fails (nothing is tagged yet, so it can be retried).

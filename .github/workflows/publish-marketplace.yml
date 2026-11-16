@@ -83,6 +83,10 @@ jobs:
       github.event_name != 'pull_request' &&
       needs.build.outputs.tag_exists == 'false'
     runs-on: ubuntu-latest
+    # The Marketplace trusted-publishing policy names environment "production":
+    # without this line the OIDC token carries no environment claim and the
+    # exchange fails with 401 "token could not be exchanged for the publisher".
+    environment: production
     permissions:
       contents: write   # create the tag and the GitHub Release
       id-token: write   # OIDC trusted publishing to the Marketplace
