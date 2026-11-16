@@ -55,8 +55,7 @@ release; the run stays green.
 
 ## Marketplace authentication
 
-Publishing uses **OIDC trusted publishing** only. The old Personal Access Token route is
-gone: Azure DevOps retires global PATs on **2026-12-01**.
+Publishing uses **OIDC trusted publishing** only: no token or secret is stored in the repository.
 
 ### `oidc` — trusted publishing (no secret at all)
 
@@ -77,8 +76,8 @@ credential. Nothing long-lived is stored, so there is no token to rotate and no 
   fails (nothing is tagged yet, so it can be retried).
   If a ruleset restricts tag creation, allow `github-actions[bot]` to create `v*` tags.
 
-> `--oidc` does **not** fall back to a PAT. If the token exchange fails the publish step fails —
-> which is the intended behaviour, not a bug to work around.
+> If the token exchange fails, the publish step fails — that is the intended behaviour, not a
+> bug to work around.
 
 ### `GITHUB_TOKEN`
 
