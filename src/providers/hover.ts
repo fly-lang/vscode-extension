@@ -15,11 +15,11 @@ const KEYWORD_DOCS: Record<string, HoverEntry> = {
     // Error handling
     fail: {
         detail: '(keyword) fail',
-        doc: 'Signals an error. Accepts 0–3 comma-separated arguments: an integer code, a string message, and/or an object instance (in any order, at most one each).\n\n```fly\nfail                        // code = 1\nfail 404                    // code = 404\nfail "not found"            // message\nfail 404, "not found"       // code + message\nfail 1, "oops", new Ctx()  // code + message + object\n```\n\nDoes **not** unwind the stack — the caller continues from the next statement.',
+        doc: 'Signals an error. Accepts 0–3 comma-separated arguments: an integer code, a string message, and/or an object instance (in any order, at most one each).\n\n```fly\nfail                        // code = 1\nfail 404                    // code = 404\nfail "not found"            // message\nfail 404, "not found"       // code + message\nfail 1, "oops", new Ctx()  // code + message + object\n```\n\nA failure is **not ignorable** (0.15.1): the function stops, and every caller stops right after the call too, until a `handle` stops the error. An error nobody handles ends the program from `main` with `error <code>: <message>` and its code as the exit code.',
     },
     handle: {
         detail: '(keyword) handle',
-        doc: 'Guards the statements of its block against errors and binds the **implicit `error` variable** — a named error variable cannot be attached.\n\n```fly\nhandle {\n    riskyOp()\n}\nif error { /* inspect the failure */ }\n```\n\nA `fail` fired **directly** inside the handle body jumps out of the block. A `fail` fired in a *callee* writes to the error value and the handle body continues.',
+        doc: 'Guards the statements of its block against errors and binds the **implicit `error` variable** — a named error variable cannot be attached.\n\n```fly\nhandle {\n    riskyOp()\n}\nif error { /* inspect the failure */ }\n```\n\nA `fail` inside the handle body, or in anything it calls, jumps out of the block at once; the handle consumes the error, so it goes no further.',
     },
     error: {
         detail: '(type) error',
@@ -29,7 +29,11 @@ const KEYWORD_DOCS: Record<string, HoverEntry> = {
     // Allocation
     new: {
         detail: '(keyword) new',
-        doc: 'Allocates an object. The storage depends on the type:\n- **struct** → stack (`alloca`), freed at scope exit\n- **class** → heap (`malloc`), released automatically at scope exit unless ownership escapes (assigned away, passed to a call, or returned)\n\n```fly\nPoint p = new Point(1, 2)   // struct: stack\nNode  n = new Node()        // class: heap, auto-released\n```\n\nThere is no `delete` and no smart-pointer qualifiers — lifetime is managed by the compiler.',
+        doc: 'Allocates an object. The storage depends on the type:\n- **struct** → stack (`alloca`), freed at scope exit\n- **class** → heap (`malloc`); release it with `delete x` (0.15 still frees a local that never escapes at scope exit; from 0.16 plain `new` requires `delete`)\n- `new unique C()` → one owner, deleted at scope exit, moved on assignment/return\n- `new shared C()` → reference-counted; `C w = weak h` observes it without owning\n\n```fly\nPoint p = new Point(1, 2)      // struct: stack\nNode  n = new Node()           // class: heap\ndelete n\nNode  u = new unique Node()    // freed at scope exit\n```',
+    },
+    delete: {
+        detail: '(keyword) delete',
+        doc: 'Releases a class object made with plain `new`: runs its `free()` method if it has one, frees the memory and sets the variable to `null` (deleting `null` does nothing).\n\n```fly\nNode n = new Node()\ndelete n\n```',
     },
 
     // Import
@@ -67,8 +71,7 @@ const KEYWORD_DOCS: Record<string, HoverEntry> = {
     ulong:  { detail: '(type) ulong',  doc: 'Unsigned 64-bit integer. Range: 0–18 446 744 073 709 551 615.' },
     float:  { detail: '(type) float',  doc: 'Single-precision 32-bit floating-point number (IEEE 754).' },
     double: { detail: '(type) double', doc: 'Double-precision 64-bit floating-point number (IEEE 754).' },
-    string: { detail: '(type) string', doc: 'String type. Represented internally as a pointer to a null-terminated byte array. Literals keep escapes **raw**: `"\\n"` is a backslash followed by `n`, not a newline.' },
-    char:   { detail: '(type) char',   doc: 'Character type. Single ASCII/UTF-8 byte.' },
+    string: { detail: '(type) string', doc: 'UTF-8 string (data pointer + byte size). Escapes are decoded: `\\n \\t \\r \\0 \\\\ \\" \\\' \\xHH \\u{…}`; a `"""…"""` literal is raw and may span lines. There is no `char`: a character is a one-character string (`str.charAt`, `str.charCount`).' },
     pointer: { detail: '(type) pointer', doc: 'Opaque machine address. Use `pointer` for raw addresses and OS/runtime handles — never `long`; there is no numeric cast between pointers and integers.' },
     complex: { detail: '(type) complex', doc: 'Complex number type (real and imaginary floating-point parts).' },
     void:   { detail: '(type) void',   doc: 'Void return type: the function hands back no value. A return type is mandatory, so a function that produces nothing declares `void` explicitly.' },

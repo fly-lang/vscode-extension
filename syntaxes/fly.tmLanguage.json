@@ -5,12 +5,14 @@
   "fileTypes": ["fly", "fly.h"],
   "patterns": [
     { "include": "#comments" },
+    { "include": "#raw-strings" },
     { "include": "#strings" },
     { "include": "#chars" },
     { "include": "#annotations" },
     { "include": "#type-declarations" },
     { "include": "#generic-type-params" },
     { "include": "#keywords-control" },
+    { "include": "#ownership" },
     { "include": "#keywords-other" },
     { "include": "#modifiers" },
     { "include": "#builtin-types" },
@@ -41,6 +43,15 @@
       ]
     },
 
+    "raw-strings": {
+      "comment": "Raw literal (0.15): \"\"\"...\"\"\" has no escape sequences and may span lines",
+      "name": "string.quoted.triple.fly",
+      "begin": "\"\"\"",
+      "end": "\"\"\"",
+      "beginCaptures": { "0": { "name": "punctuation.definition.string.begin.fly" } },
+      "endCaptures":   { "0": { "name": "punctuation.definition.string.end.fly" } }
+    },
+
     "strings": {
       "name": "string.quoted.double.fly",
       "begin": "\"",
@@ -64,9 +75,34 @@
     },
 
     "escape-sequences": {
-      "comment": "Fly string literals keep escapes RAW: a backslash only shields the next character from ending the literal (so \\\" embeds a quote); no sequence is decoded",
-      "name": "constant.character.escape.fly",
-      "match": "\\\\."
+      "comment": "0.15 escapes, decoded by the compiler: \\n \\t \\r \\0 \\\\ \\\" \\' \\xHH \\u{H..}; any other backslash sequence is a compile error",
+      "patterns": [
+        {
+          "name": "constant.character.escape.fly",
+          "match": "\\\\(?:[ntr0\\\\\"']|x[0-9A-Fa-f]{2}|u\\{[0-9A-Fa-f]{1,6}\\})"
+        },
+        {
+          "name": "invalid.illegal.escape.fly",
+          "match": "\\\\."
+        }
+      ]
+    },
+
+    "ownership": {
+      "comment": "Contextual ownership qualifiers (0.15): new unique / new shared, and = weak h",
+      "patterns": [
+        {
+          "match": "\\b(new)\\s+(unique|shared)\\b",
+          "captures": {
+            "1": { "name": "keyword.other.fly" },
+            "2": { "name": "storage.modifier.ownership.fly" }
+          }
+        },
+        {
+          "match": "(?<==)\\s*(weak)\\b",
+          "captures": { "1": { "name": "storage.modifier.ownership.fly" } }
+        }
+      ]
     },
 
     "annotations": {
@@ -98,7 +134,7 @@
 
     "keywords-other": {
       "name": "keyword.other.fly",
-      "match": "\\b(namespace|import|as|new)\\b"
+      "match": "\\b(namespace|import|as|new|delete)\\b"
     },
 
     "generic-type-params": {
@@ -117,7 +153,7 @@
 
     "builtin-types": {
       "name": "support.type.fly",
-      "match": "\\b(bool|byte|char|short|ushort|int|uint|long|ulong|pointer|float|double|complex|string|void|error)\\b"
+      "match": "\\b(bool|byte|short|ushort|int|uint|long|ulong|pointer|float|double|complex|string|void|error)\\b"
     },
 
     "constants": {

@@ -42,8 +42,8 @@ const PATTERNS: { re: RegExp; kind: vscode.SymbolKind; group: number }[] = [
 // return value travels on `return`, it is an ordinary identifier again (the
 // standard library uses it as a parameter name for C-ABI output parameters).
 const SKIP_NAMES = new Set([
-    'abstract', 'as', 'bool', 'break', 'byte', 'case', 'char', 'class',
-    'complex', 'const', 'continue', 'default', 'double', 'elsif', 'else',
+    'abstract', 'as', 'bool', 'break', 'byte', 'case', 'class',
+    'complex', 'const', 'continue', 'default', 'delete', 'double', 'elsif', 'else',
     'enum', 'error', 'fail', 'false', 'final', 'float', 'for', 'handle',
     'if', 'import', 'in', 'int', 'interface', 'long', 'namespace', 'new',
     'null', 'pointer', 'private', 'protected', 'public', 'return',
