@@ -16,3 +16,5 @@ As you type you will see:
 - **Completions** appear after `io.` — press `Tab` to accept
 
 Press **Ctrl+F5** to compile and run the program in the integrated terminal.
+
+Use **Format Document** to lay the file out with `fly fmt`.

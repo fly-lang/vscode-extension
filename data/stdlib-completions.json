@@ -670,6 +670,12 @@
         "signature": "newInt(const int n)"
       },
       {
+        "name": "newDouble",
+        "returnType": "pointer",
+        "params": "const double d",
+        "signature": "newDouble(const double d)"
+      },
+      {
         "name": "newNumber",
         "returnType": "pointer",
         "params": "const string literal",
@@ -908,6 +914,78 @@
         "returnType": "void",
         "params": "const long a, const long b, long out_q, long out_r",
         "signature": "divmod(const long a, const long b, long out_q, long out_r)"
+      },
+      {
+        "name": "wrapAdd",
+        "returnType": "int",
+        "params": "const int a, const int b",
+        "signature": "wrapAdd(const int a, const int b)"
+      },
+      {
+        "name": "wrapSub",
+        "returnType": "int",
+        "params": "const int a, const int b",
+        "signature": "wrapSub(const int a, const int b)"
+      },
+      {
+        "name": "wrapMul",
+        "returnType": "int",
+        "params": "const int a, const int b",
+        "signature": "wrapMul(const int a, const int b)"
+      },
+      {
+        "name": "wrapAddU",
+        "returnType": "uint",
+        "params": "const uint a, const uint b",
+        "signature": "wrapAddU(const uint a, const uint b)"
+      },
+      {
+        "name": "wrapSubU",
+        "returnType": "uint",
+        "params": "const uint a, const uint b",
+        "signature": "wrapSubU(const uint a, const uint b)"
+      },
+      {
+        "name": "wrapMulU",
+        "returnType": "uint",
+        "params": "const uint a, const uint b",
+        "signature": "wrapMulU(const uint a, const uint b)"
+      },
+      {
+        "name": "wrapAddUL",
+        "returnType": "ulong",
+        "params": "const ulong a, const ulong b",
+        "signature": "wrapAddUL(const ulong a, const ulong b)"
+      },
+      {
+        "name": "wrapSubUL",
+        "returnType": "ulong",
+        "params": "const ulong a, const ulong b",
+        "signature": "wrapSubUL(const ulong a, const ulong b)"
+      },
+      {
+        "name": "wrapMulUL",
+        "returnType": "ulong",
+        "params": "const ulong a, const ulong b",
+        "signature": "wrapMulUL(const ulong a, const ulong b)"
+      },
+      {
+        "name": "wrapAddL",
+        "returnType": "long",
+        "params": "const long a, const long b",
+        "signature": "wrapAddL(const long a, const long b)"
+      },
+      {
+        "name": "wrapSubL",
+        "returnType": "long",
+        "params": "const long a, const long b",
+        "signature": "wrapSubL(const long a, const long b)"
+      },
+      {
+        "name": "wrapMulL",
+        "returnType": "long",
+        "params": "const long a, const long b",
+        "signature": "wrapMulL(const long a, const long b)"
       },
       {
         "name": "sin",
@@ -2216,10 +2294,16 @@
         "signature": "set(const string key, const string value)"
       },
       {
-        "name": "delete",
+        "name": "del",
         "returnType": "void",
         "params": "const string key",
-        "signature": "delete(const string key)"
+        "signature": "del(const string key)"
+      },
+      {
+        "name": "stringArrayFree",
+        "returnType": "void",
+        "params": "StringArray a",
+        "signature": "stringArrayFree(StringArray a)"
       },
       {
         "name": "all",
@@ -2434,10 +2518,10 @@
         "signature": "chmod(const string path, const int mode)"
       },
       {
-        "name": "delete",
+        "name": "del",
         "returnType": "void",
         "params": "const string path",
-        "signature": "delete(const string path)"
+        "signature": "del(const string path)"
       },
       {
         "name": "copy",
@@ -2480,6 +2564,12 @@
         "returnType": "void",
         "params": "const string path",
         "signature": "dirDeleteAll(const string path)"
+      },
+      {
+        "name": "dirEntriesFree",
+        "returnType": "void",
+        "params": "DirEntries d",
+        "signature": "dirEntriesFree(DirEntries d)"
       },
       {
         "name": "dirRead",
@@ -2636,6 +2726,12 @@
   },
   "fly.os.io": {
     "functions": [
+      {
+        "name": "bufFree",
+        "returnType": "void",
+        "params": "Buf b",
+        "signature": "bufFree(Buf b)"
+      },
       {
         "name": "fileReader",
         "returnType": "Reader",
@@ -2887,6 +2983,10 @@
           {
             "name": "close",
             "params": ""
+          },
+          {
+            "name": "free",
+            "params": ""
           }
         ]
       }
@@ -2922,8 +3022,8 @@
       {
         "name": "joinN",
         "returnType": "string",
-        "params": "const string parts, const int n",
-        "signature": "joinN(const string parts, const int n)"
+        "params": "fly.os.env.StringArray parts",
+        "signature": "joinN(fly.os.env.StringArray parts)"
       },
       {
         "name": "absolute",
@@ -3391,6 +3491,114 @@
         "returnType": "string",
         "params": "const long src",
         "signature": "convertL(const long src)"
+      },
+      {
+        "name": "charCount",
+        "returnType": "int",
+        "params": "const string s",
+        "signature": "charCount(const string s)"
+      },
+      {
+        "name": "charAt",
+        "returnType": "string",
+        "params": "const string s, const int i",
+        "signature": "charAt(const string s, const int i)"
+      },
+      {
+        "name": "chars",
+        "returnType": "List<string>",
+        "params": "const string s",
+        "signature": "chars(const string s)"
+      },
+      {
+        "name": "charCode",
+        "returnType": "int",
+        "params": "const string s, const int i",
+        "signature": "charCode(const string s, const int i)"
+      },
+      {
+        "name": "fromCharCode",
+        "returnType": "string",
+        "params": "const int cp",
+        "signature": "fromCharCode(const int cp)"
+      },
+      {
+        "name": "isUtf8",
+        "returnType": "bool",
+        "params": "const string s",
+        "signature": "isUtf8(const string s)"
+      },
+      {
+        "name": "reverse",
+        "returnType": "string",
+        "params": "const string s",
+        "signature": "reverse(const string s)"
+      },
+      {
+        "name": "padLeft",
+        "returnType": "string",
+        "params": "const string s, const int width, const string fill",
+        "signature": "padLeft(const string s, const int width, const string fill)"
+      },
+      {
+        "name": "padRight",
+        "returnType": "string",
+        "params": "const string s, const int width, const string fill",
+        "signature": "padRight(const string s, const int width, const string fill)"
+      },
+      {
+        "name": "split",
+        "returnType": "List<string>",
+        "params": "const string s, const string sep",
+        "signature": "split(const string s, const string sep)"
+      },
+      {
+        "name": "join",
+        "returnType": "string",
+        "params": "const List<string> parts, const string sep",
+        "signature": "join(const List<string> parts, const string sep)"
+      },
+      {
+        "name": "compare",
+        "returnType": "int",
+        "params": "const string a, const string b",
+        "signature": "compare(const string a, const string b)"
+      },
+      {
+        "name": "indexOfFrom",
+        "returnType": "int",
+        "params": "const string src, const string sub, const int from",
+        "signature": "indexOfFrom(const string src, const string sub, const int from)"
+      },
+      {
+        "name": "replaceFirst",
+        "returnType": "string",
+        "params": "const string src, const string from, const string to",
+        "signature": "replaceFirst(const string src, const string from, const string to)"
+      },
+      {
+        "name": "toLong",
+        "returnType": "long",
+        "params": "const string s, int errOut",
+        "signature": "toLong(const string s, int errOut)"
+      },
+      {
+        "name": "toInt",
+        "returnType": "int",
+        "params": "const string s, int errOut",
+        "signature": "toInt(const string s, int errOut)"
+      },
+      {
+        "name": "toDouble",
+        "returnType": "double",
+        "params": "const string s, int errOut",
+        "signature": "toDouble(const string s, int errOut)"
+      },
+      {
+        "name": "convertD",
+        "returnType": "string",
+        "params": "const double v",
+        "signature": "convertD(const double v)"
       }
     ],
     "classes": [],
@@ -3523,6 +3731,36 @@
         "returnType": "bool",
         "params": "Semaphore s",
         "signature": "semaphoreTryAcquire(Semaphore s)"
+      },
+      {
+        "name": "mutexFree",
+        "returnType": "void",
+        "params": "Mutex m",
+        "signature": "mutexFree(Mutex m)"
+      },
+      {
+        "name": "rwMutexFree",
+        "returnType": "void",
+        "params": "RWMutex rw",
+        "signature": "rwMutexFree(RWMutex rw)"
+      },
+      {
+        "name": "waitGroupFree",
+        "returnType": "void",
+        "params": "WaitGroup wg",
+        "signature": "waitGroupFree(WaitGroup wg)"
+      },
+      {
+        "name": "onceFree",
+        "returnType": "void",
+        "params": "Once o",
+        "signature": "onceFree(Once o)"
+      },
+      {
+        "name": "semaphoreFree",
+        "returnType": "void",
+        "params": "Semaphore s",
+        "signature": "semaphoreFree(Semaphore s)"
       }
     ],
     "classes": [],

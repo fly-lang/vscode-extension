@@ -89,7 +89,7 @@
     },
 
     "ownership": {
-      "comment": "Contextual ownership qualifiers (0.15): new unique / new shared, and = weak h",
+      "comment": "Contextual ownership qualifiers: new unique / new shared, and = weak h (not reserved words)",
       "patterns": [
         {
           "match": "\\b(new)\\s+(unique|shared)\\b",
@@ -163,8 +163,13 @@
           "match": "\\b(true|false)\\b"
         },
         {
+          "comment": "this and super are not reserved words, but they always mean the object",
+          "name": "variable.language.fly",
+          "match": "\\b(this|super)\\b"
+        },
+        {
           "name": "constant.language.null.fly",
-          "match": "\\b(null|unset)\\b"
+          "match": "\\bnull\\b"
         }
       ]
     },

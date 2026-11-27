@@ -17,13 +17,13 @@ import * as vscode from 'vscode';
 const READ_FIELDS = new Set([
     'name', 'version', 'description', 'license', 'flyVersion', 'homepage',
     'repository', 'registry', 'authors', 'linkLibs', 'dependencies',
-    'devDependencies', 'targets',
+    'devDependencies', 'targets', 'profiles',
 ]);
 
 /** Declared by the fly.meta schema but IGNORED by the current reader.
  *  (`tst` is the schema's test-config field — `test` is a reserved keyword.) */
 const IGNORED_FIELDS = new Set([
-    'profiles', 'repositories', 'tst', 'workspace', 'hooks',
+    'repositories', 'tst', 'workspace', 'hooks',
 ]);
 
 // `  string name = "x"` / `  Target[] targets = { … }` — the declaration's name.

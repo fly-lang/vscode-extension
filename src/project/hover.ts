@@ -15,7 +15,8 @@ const FIELDS: Record<string, FieldDoc> = {
     name: {
         detail: 'string name',
         doc:    'The package name (REQUIRED). Must match `[a-z0-9_-]+`.\n\n'
-              + 'On a `Target`, the first argument is the output name instead.',
+              + 'On a `Target` it is the output name, and on a `Profile` the name '
+              + '`--profile` selects.',
     },
     version: {
         detail: 'string version',
@@ -62,19 +63,110 @@ const FIELDS: Record<string, FieldDoc> = {
     },
     linkLibs: {
         detail: 'string[] linkLibs',
-        doc:    'Native libraries to link into every target, without the `-l` prefix.\n\n'
+        doc:    'Native libraries to link, without the `-l` prefix: at the top level for '
+              + 'every target, inside a target for that one only.\n\n'
               + '```fly\nstring[] linkLibs = { "m", "pthread" }\n```',
     },
     targets: {
         detail: 'Target[] targets',
-        doc:    'The build targets — binaries and libraries.\n\n'
+        doc:    'The build targets — executables, libraries and file copies — built in '
+              + 'the order they are written.\n\n'
               + '```fly\nTarget[] targets = {\n'
-              + '    new Target("app", "src/main.fly", ""),\n'
-              + '    new Target("mylib", "src/lib.fly", "static")\n'
+              + '    { name = "mylib", srcDirs = { "lib" }, lib = "static", dir = "lib" },\n'
+              + '    { name = "app", srcDirs = { "src" }, entry = "src/main.fly",\n'
+              + '      libDirs = { "@out/lib" }, dir = "bin" },\n'
+              + '    { name = "assets", dir = "share", copy = { "assets" } }\n'
               + '}\n```\n\n'
-              + 'Arguments are `(name, path, lib)`. An empty `lib` makes the target an '
-              + '**executable**; `"static"`, `"dynamic"` or `"both"` make it a library.\n\n'
+              + 'Each target is a struct literal with named fields; only `name` is required. '
+              + 'No `lib` makes the target an **executable**; `"static"`, `"dynamic"` or '
+              + '`"both"` make it a library. `@out` is the output directory.\n\n'
+              + 'The short form `new Target(name, path, lib)` still works.\n\n'
               + 'The name is what `fly build --target <name>` and `fly run --bin <name>` select.',
+    },
+    srcDirs: {
+        detail: 'string[] srcDirs  (Target)',
+        doc:    'Source roots of the target. The first is where the entry (`main()`, the '
+              + 'suites, or every source of a library) is discovered; all of them resolve imports.',
+    },
+    path: {
+        detail: 'string path  (Target / Dependency)',
+        doc:    'On a **Target**: a source file, e.g. `"src/main.fly"` — its directory is '
+              + 'compiled (the short way to say `srcDirs` + `entry`).\n\n'
+              + 'On a **Dependency**: the directory of a local package (8th argument).',
+    },
+    files: {
+        detail: 'string[] files  (Target)',
+        doc:    'Compile exactly these files instead of a whole directory.',
+    },
+    entry: {
+        detail: 'string entry  (Target)',
+        doc:    'The file declaring `main()`, for a source tree that has more than one.',
+    },
+    lib: {
+        detail: 'string lib  (Target)',
+        doc:    '`"static"`, `"dynamic"` or `"both"` build a library (a merged object or a '
+              + 'shared library, plus one `.fly.h` header per public module). Empty or '
+              + 'omitted: an executable.',
+    },
+    os: {
+        detail: 'string os  (Target)',
+        doc:    '`"linux"`, `"windows"` or `"macos"`: the target is built only on that host '
+              + 'and reported as skipped elsewhere. Omitted: built everywhere.',
+    },
+    artifact: {
+        detail: 'string artifact  (Target)',
+        doc:    'The exact output name, with no `lib` prefix; the extension is added per platform.',
+    },
+    libDirs: {
+        detail: 'string[] libDirs  (Target)',
+        doc:    'Package directories (`-L`): their `.fly.h` headers resolve imports and '
+              + 'their archives are linked. `@out` is the output directory, so `"@out/lib"` '
+              + 'names the libraries built by the targets before this one.',
+    },
+    flags: {
+        detail: 'string[] flags  (Target)',
+        doc:    'Extra compiler arguments, passed verbatim. `@out` is the output directory.',
+    },
+    dir: {
+        detail: 'string dir  (Target)',
+        doc:    'Subdirectory of the output directory the artifact lands in (a library\'s '
+              + 'headers and the target\'s copies too) — e.g. `"bin"` and `"lib"` for an '
+              + 'installable layout.',
+    },
+    copy: {
+        detail: 'string[] copy  (Target)',
+        doc:    'Files or directories copied into the target\'s directory. A directory is '
+              + 'copied whole, a symbolic link is followed, and `dir/prefix*suffix` takes the '
+              + 'matching files (none matching is fine). A target with only copies compiles nothing.',
+    },
+    rpaths: {
+        detail: 'string[] rpaths  (Target)',
+        doc:    'Where an executable looks for its shared libraries at run time (Linux and '
+              + 'macOS; Windows has no such thing). `$ORIGIN` is the executable\'s own '
+              + 'directory: `"$ORIGIN/../lib"`.',
+    },
+    optLevel: {
+        detail: 'int optLevel  (Profile)',
+        doc:    'Optimisation level, `0`..`3` (`-O<n>`).',
+    },
+    debugInfo: {
+        detail: 'bool debugInfo  (Profile)',
+        doc:    'Emit debug information (source lines, parameters and local variables).',
+    },
+    assertions: {
+        detail: 'bool assertions  (Profile)',
+        doc:    'Keep assertions in the build.',
+    },
+    warningsAsErrors: {
+        detail: 'bool warningsAsErrors  (Profile)',
+        doc:    'A warning fails the build like an error.',
+    },
+    debugPrefixMap: {
+        detail: 'string debugPrefixMap  (Profile)',
+        doc:    '`"OLD=NEW"` pairs separated by `;`: `NEW` is written for the directory '
+              + 'prefix `OLD` in debug information and run-time error positions, so a '
+              + 'build carries no path of the machine that made it. `@root` is the package '
+              + 'root, `@out` the output directory, `@fly` the toolchain.',
     },
     dependencies: {
         detail: 'Dependency[] dependencies',
@@ -95,11 +187,18 @@ const FIELDS: Record<string, FieldDoc> = {
               + '(`fly add --dev`).',
     },
     profiles: {
-        detail: 'Profile[] profiles — NOT READ YET',
-        doc:    '⚠️ The current `fly` driver does **not** read this field: declaring it is '
-              + 'accepted but has no effect.\n\n'
-              + '`--release` uses the built-in profile (`-O3`, no debug info, assertions off) '
-              + 'and the default is `-O0` with debug info and assertions on.',
+        detail: 'Profile[] profiles',
+        doc:    'Named build profiles, selected with `fly build --profile <name>` '
+              + '(`--release` selects `release`; with neither, `debug`).\n\n'
+              + '```fly\nProfile[] profiles = {\n'
+              + '    { name = "release", optLevel = 2, warningsAsErrors = true },\n'
+              + '    { name = "dist", optLevel = 3, debugInfo = false }\n'
+              + '}\n```\n\n'
+              + 'A field left out keeps the built-in default of that profile: `release` is '
+              + '`-O3` with no debug info and assertions off, every other name starts from '
+              + 'the debug defaults (`-O0`, debug info, assertions on). Each profile builds '
+              + 'into its own `target/<name>/`.\n\n'
+              + 'Pick the one the editor commands use with **Fly: Select Profile**.',
     },
     repositories: {
         detail: 'Registry[] repositories — NOT READ YET',
@@ -134,9 +233,11 @@ const TYPES: Record<string, FieldDoc> = {
               + 'Create one with `fly init`.',
     },
     Target: {
-        detail: 'new Target(name, path, lib)',
-        doc:    'One build target. `lib` is `""` for an executable, else `"static"`, '
-              + '`"dynamic"` or `"both"`.',
+        detail: '{ name = …, srcDirs = { … }, … }  or  new Target(name, path, lib)',
+        doc:    'One build target. Named fields: `name`, `path`, `lib`, `srcDirs`, `files`, '
+              + '`entry`, `os`, `artifact`, `libDirs`, `linkLibs`, `flags`, `dir`, `copy`, '
+              + '`rpaths`. `lib` is empty for an executable, else `"static"`, `"dynamic"` '
+              + 'or `"both"`.',
     },
     Dependency: {
         detail: 'new Dependency(name, version, registry, git, tag, branch, rev, path)',
@@ -145,9 +246,10 @@ const TYPES: Record<string, FieldDoc> = {
               + 'git dependency, or `path` for a local one. Trailing arguments may be omitted.',
     },
     Profile: {
-        detail: 'new Profile(name, optLevel, debugInfo, assertions, lto, strip)',
-        doc:    'A named build profile. ⚠️ Declared in the schema but **not read** by the '
-              + 'current driver — only the built-in `debug` and `--release` profiles apply.',
+        detail: '{ name = …, optLevel = …, debugInfo = …, … }',
+        doc:    'A named build profile, written as a struct literal. Fields: `name`, '
+              + '`optLevel`, `debugInfo`, `assertions`, `lto`, `strip`, `warningsAsErrors`, '
+              + '`debugPrefixMap`. Selected with `fly build --profile <name>`.',
     },
     Registry: {
         detail: 'new Registry(name, url)',

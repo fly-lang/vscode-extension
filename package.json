@@ -1,8 +1,8 @@
 {
   "name": "fly-vscode-extension",
   "displayName": "Fly Programming Language",
-  "description": "Fly programming language support for Visual Studio Code: syntax highlighting, snippets, and language configuration for .fly files.",
-  "version": "0.7.0",
+  "description": "Fly programming language support for Visual Studio Code: syntax highlighting, language server, formatting, build/run/debug and project commands for .fly files.",
+  "version": "0.8.0",
   "publisher": "fly-lang",
   "icon": "fly_logo.png",
   "license": "Apache-2.0",
@@ -19,7 +19,9 @@
   },
   "categories": [
     "Programming Languages",
-    "Snippets"
+    "Snippets",
+    "Formatters",
+    "Debuggers"
   ],
   "keywords": [
     "fly",
@@ -51,7 +53,7 @@
           {
             "id": "build-run",
             "title": "Build and run",
-            "description": "Press **Ctrl+F5** to compile and run, **Ctrl+Shift+B** to build only, or **F5** to launch the debugger (uses the lldb-dap bundled with the Fly toolchain).",
+            "description": "Press **Ctrl+F5** to compile and run, **Ctrl+Shift+B** to build only, or **F5** to launch the debugger (uses the lldb-dap bundled with the Fly toolchain). **Format Document** runs `fly fmt`.",
             "media": { "markdown": "media/first-file.md" },
             "completionEvents": ["onCommand:fly.runFile", "onCommand:fly.buildFile"]
           },
@@ -113,6 +115,11 @@
         "title": "Fly: Debug File",
         "category": "Fly",
         "icon": "$(debug-alt)"
+      },
+      {
+        "command": "fly.restartLsp",
+        "title": "Fly: Restart Language Server",
+        "category": "Fly"
       },
       {
         "command": "fly.pkgInit",
@@ -287,7 +294,7 @@
         "configurationSnippets": [
           {
             "label": "Fly: Launch and debug current file",
-            "description": "Compile with --debug and launch under the lldb-dap bundled with the Fly toolchain.",
+            "description": "Launch an executable built with --debug-symbols under the lldb-dap bundled with the Fly toolchain.",
             "body": {
               "type": "fly",
               "request": "launch",
@@ -304,7 +311,7 @@
       {
         "name": "fly",
         "owner": "fly",
-        "fileLocation": ["absolute"],
+        "fileLocation": ["autoDetect", "${cwd}"],
         "pattern": {
           "regexp": "^(.+?):(\\d+):(\\d+):\\s+(fatal error|error|warning|note|remark):\\s+(.+)$",
           "file": 1,
@@ -339,7 +346,7 @@
         "fly.compilerPath": {
           "type": "string",
           "default": "fly",
-          "description": "Path to the Fly compiler executable. Used to run live diagnostics on save."
+          "description": "Path to the Fly compiler executable (fly). The language server and the debugger are looked up next to it."
         },
         "fly.enableDiagnostics": {
           "type": "boolean",
@@ -354,22 +361,22 @@
         "fly.enableLsp": {
           "type": "boolean",
           "default": true,
-          "description": "Enable the Fly Language Server for semantic features (hover on symbols, go-to-definition, find references)."
+          "description": "Enable the Fly Language Server for semantic features (diagnostics, hover on symbols, go-to-definition, find references, outline). Changing it needs a window reload."
         },
         "fly.buildArgs": {
           "type": "string",
           "default": "",
-          "description": "Extra arguments appended to the fly compiler when running 'Fly: Build File', e.g. \"-O2\" or \"-o bin/myapp\"."
+          "description": "Extra arguments appended to the fly compiler when running 'Fly: Build File', e.g. \"-O2\" or \"-o bin/myapp\". Separated by spaces; double quotes group an argument that contains one."
+        },
+        "fly.runArgs": {
+          "type": "string",
+          "default": "",
+          "description": "Arguments passed to the program started by 'Fly: Run File' and 'Fly: Debug File'. Separated by spaces; double quotes group an argument that contains one."
         },
         "fly.projectProfile": {
           "type": "string",
-          "enum": ["", "release"],
-          "enumDescriptions": [
-            "debug — -O0, debug info, assertions on",
-            "release — -O3, no debug info, assertions off"
-          ],
           "default": "",
-          "description": "Build profile used by the Fly: Build / Run / Test Project commands. Empty = debug. Only these two exist: the manifest reader does not consume the schema's 'profiles' field yet, so a custom profile name would change nothing."
+          "description": "Build profile used by the Fly: Build / Run / Test / Clean Project commands. Empty = debug (-O0, debug info); \"release\" = --release (-O3, no debug info); any other name is a profile declared in the manifest's 'profiles' field, passed as --profile <name>. 'Fly: Select Profile' lists them."
         },
         "fly.projectForceRebuild": {
           "type": "boolean",
@@ -379,12 +386,12 @@
         "fly.projectBuildArgs": {
           "type": "string",
           "default": "",
-          "description": "Extra arguments appended to 'fly build', e.g. \"--target mybin\". Use fly.projectProfile to select the profile."
+          "description": "Extra arguments appended to 'fly build', e.g. \"--target mybin\" or \"--out-dir dist\". Use fly.projectProfile to select the profile."
         },
         "fly.debugBuildArgs": {
           "type": "string",
-          "default": "--debug",
-          "description": "Extra compiler flags used by 'Fly: Debug File', e.g. \"--debug -O0\"."
+          "default": "--debug-symbols",
+          "description": "Compiler flags used by 'Fly: Debug File'. --debug-symbols emits the debug information (source lines, parameters, local variables); --debug adds verbose compiler logging to it."
         },
         "fly.enableWorkspaceDiagnostics": {
           "type": "boolean",

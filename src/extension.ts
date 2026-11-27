@@ -6,17 +6,25 @@ import { FlyDocumentSymbolProvider } from './providers/documentSymbol';
 import { FlyHoverProvider }          from './providers/hover';
 import { FlyCompletionProvider }     from './providers/completion';
 import { FlyDiagnosticsProvider }    from './providers/diagnostics';
-import { startLspClient, stopLspClient } from './lsp/client';
+import { FlyFormattingProvider }     from './providers/format';
+import {
+    startLspClient, stopLspClient, restartLspClient, setLspStateListener,
+} from './lsp/client';
 import { findFlyInstallations, detectVersion, deriveLspPath, deriveDapPath } from './compiler/finder';
 import { createStatusBar, refresh as refreshStatusBar } from './compiler/statusBar';
-import { resolveFlyPath, resolveManifestDir, isManifest, MANIFEST_GLOB } from './project/finder';
+import { flyTask, runTask } from './compiler/tasks';
+import {
+    resolveFlyPath, resolveManifestDir, readManifest, isManifest, MANIFEST_GLOB,
+} from './project/finder';
 import { ManifestCompletionProvider }   from './project/completions';
 import { ManifestHoverProvider }        from './project/hover';
 import { ManifestDiagnosticsProvider }  from './project/diagnostics';
 import { ManifestCodeLensProvider }     from './project/codeLens';
 import { ManifestDocumentLinkProvider } from './project/documentLink';
 // Pure arg/path logic lives in core/toolchain (unit-tested without vscode).
-import { singleFileArgs } from './core/toolchain';
+import {
+    singleFileArgs, exeName, profileArgs, splitArgs, manifestProfiles,
+} from './core/toolchain';
 
 const FLY_SELECTOR: vscode.DocumentSelector = { language: 'fly', scheme: 'file' };
 
@@ -25,11 +33,38 @@ const MANIFEST_SELECTOR: vscode.DocumentSelector = {
     language: 'fly', scheme: 'file', pattern: MANIFEST_GLOB,
 };
 
+const NO_MANIFEST =
+    'Fly: no Manifest.fly found in this workspace. Run "Fly: Init Project" to create one.';
+
+/** The active .fly editor, saved — or undefined after telling the user why not. */
+async function activeFlyFile(verb: string): Promise<string | undefined> {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor || editor.document.languageId !== 'fly') {
+        vscode.window.showWarningMessage(`Fly: Open a .fly file to ${verb}.`);
+        return undefined;
+    }
+    await editor.document.save();
+    return editor.document.uri.fsPath;
+}
+
+/** Where a single-file command runs: the file's workspace folder, else its directory. */
+function fileCwd(filePath: string): string {
+    const folder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(filePath));
+    return folder ? folder.uri.fsPath : path.dirname(filePath);
+}
+
+/** The executable a single-file Run / Debug builds, in the OS temp directory. */
+function tempExe(filePath: string): string {
+    return exeName(path.join(os.tmpdir(), path.basename(filePath, '.fly')));
+}
+
 export function activate(context: vscode.ExtensionContext): void {
+    const flyConfig = () => vscode.workspace.getConfiguration('fly');
+
     // ── Compiler selection command ─────────────────────────────────────────
     context.subscriptions.push(
         vscode.commands.registerCommand('fly.selectCompiler', async () => {
-            const config    = vscode.workspace.getConfiguration('fly');
+            const config    = flyConfig();
             const current   = config.get<string>('compilerPath', 'fly');
 
             // Discover installations in the background while showing the picker
@@ -95,78 +130,44 @@ export function activate(context: vscode.ExtensionContext): void {
                 );
             }
 
-            void refreshStatusBar(vscode.window.activeTextEditor);
+            // The configuration listener below restarts the language server
+            // and redraws the status bar.
             vscode.window.showInformationMessage(`Fly compiler set to ${newPath} (v${version})`);
         }),
     );
 
-    // ── Build command ──────────────────────────────────────────────────────
-    // Uses vscode.tasks.executeTask() so errors appear in the Problems panel
-    // via the $fly problem matcher.
+    // ── Build File ─────────────────────────────────────────────────────────
+    // A task, so errors appear in the Problems panel via the $fly matcher.
     context.subscriptions.push(
         vscode.commands.registerCommand('fly.buildFile', async () => {
-            const editor = vscode.window.activeTextEditor;
-            if (!editor || editor.document.languageId !== 'fly') {
-                vscode.window.showWarningMessage('Fly: Open a .fly file to build.');
-                return;
-            }
-            await editor.document.save();
+            const filePath = await activeFlyFile('build');
+            if (!filePath) return;
 
-            const cfg        = vscode.workspace.getConfiguration('fly');
-            const compiler   = cfg.get<string>('compilerPath', 'fly');
-            const extraArgs  = cfg.get<string>('buildArgs', '').trim();
-            const filePath   = editor.document.uri.fsPath;
-            const q          = (s: string) => `"${s.replace(/"/g, '\\"')}"`;
-            const cmd        = [compiler, '--entry', q(filePath),
-                                '--src-dir', q(path.dirname(filePath)),
-                                extraArgs].filter(Boolean).join(' ');
-
-            const task = new vscode.Task(
-                { type: 'fly', task: 'build' },
-                vscode.TaskScope.Workspace,
-                'Build File',
-                'fly',
-                new vscode.ShellExecution(cmd),
-                '$fly',
-            );
-            task.presentationOptions = {
-                reveal: vscode.TaskRevealKind.Always,
-                panel:  vscode.TaskPanelKind.Shared,
-                clear:  true,
-            };
-            await vscode.tasks.executeTask(task);
+            const extra = splitArgs(flyConfig().get<string>('buildArgs', ''));
+            await vscode.tasks.executeTask(flyTask(
+                'Build File', 'build', resolveFlyPath(),
+                [...singleFileArgs(filePath), ...extra], fileCwd(filePath)));
         }),
     );
 
-    // ── Run command (compile + execute in one terminal) ───────────────────
-    let runTerminal: vscode.Terminal | undefined;
+    // ── Run File (compile, then run only if the compile succeeded) ────────
     context.subscriptions.push(
         vscode.commands.registerCommand('fly.runFile', async () => {
-            const editor = vscode.window.activeTextEditor;
-            if (!editor || editor.document.languageId !== 'fly') {
-                vscode.window.showWarningMessage('Fly: Open a .fly file to run.');
-                return;
-            }
-            await editor.document.save();
-
-            const cfg        = vscode.workspace.getConfiguration('fly');
-            const compiler   = cfg.get<string>('compilerPath', 'fly');
-            const filePath   = editor.document.uri.fsPath;
+            const filePath = await activeFlyFile('run');
+            if (!filePath) return;
 
             // Output binary in the system temp dir to avoid polluting the project.
-            const baseName   = path.basename(filePath, '.fly');
-            const outPath    = path.join(os.tmpdir(), baseName);
-            const q          = (s: string) => `"${s.replace(/"/g, '\\"')}"`;
-            const compileCmd = `${q(compiler)} --entry ${q(filePath)} ` +
-                               `--src-dir ${q(path.dirname(filePath))} -o ${q(outPath)}`;
-            const runCmd     = q(outPath);
+            const exe  = tempExe(filePath);
+            const cwd  = fileCwd(filePath);
+            const code = await runTask(flyTask(
+                'Build File', 'build', resolveFlyPath(),
+                [...singleFileArgs(filePath), '-o', exe], cwd));
+            if (code !== 0) return;
 
-            if (!runTerminal || runTerminal.exitStatus !== undefined) {
-                runTerminal = vscode.window.createTerminal('Fly Run');
-            }
-            runTerminal.show(false);   // false = focus the terminal
-            // Compile first; only run if compilation succeeds (&&).
-            runTerminal.sendText(`${compileCmd} && ${runCmd}`);
+            const args = splitArgs(flyConfig().get<string>('runArgs', ''));
+            await vscode.tasks.executeTask(flyTask(
+                `Run ${path.basename(filePath)}`, 'run', exe, args, cwd,
+                { matcher: false, focus: true, dedicated: true }));
         }),
     );
 
@@ -203,74 +204,45 @@ export function activate(context: vscode.ExtensionContext): void {
     // subcommands below are exactly the ones the self-hosted driver implements.
     // Anything else it rejects as an unknown argument, so nothing here offers a
     // button that cannot work.
-    let projectTerminal: vscode.Terminal | undefined;
-
-    function runFly(args: string[]): void {
+    //
+    // The driver reads the manifest from the CURRENT directory only, so every
+    // task runs with the manifest's directory as its working directory.
+    function runFly(label: string, args: string[], opts: { focus?: boolean } = {}): void {
         const projectDir = resolveManifestDir();
         if (!projectDir) {
-            vscode.window.showWarningMessage(
-                'Fly: no Manifest.fly found in this workspace. Run "Fly: Init Project" to create one.');
+            vscode.window.showWarningMessage(NO_MANIFEST);
             return;
         }
-        const fly = resolveFlyPath();
-        const cmd = [fly, ...args].join(' ');
-
-        if (!projectTerminal || projectTerminal.exitStatus !== undefined) {
-            projectTerminal = vscode.window.createTerminal('Fly');
-        }
-        projectTerminal.show(true);
-        // The driver reads the manifest from the CURRENT directory only.
-        projectTerminal.sendText(`cd "${projectDir.replace(/"/g, '\\"')}" && ${cmd}`);
+        void vscode.tasks.executeTask(flyTask(
+            label, `project-${args[0]}`, resolveFlyPath(), args, projectDir,
+            { focus: opts.focus }));
     }
 
-    /**
-     * Returns ['--release'] when the release profile is selected, else [].
-     *
-     * Only debug and release exist: the manifest reader does not consume the
-     * schema's `profiles` field yet, so a custom `--profile <name>` would fall
-     * back to the built-in defaults anyway.
-     */
-    function profileArgs(): string[] {
-        const p = vscode.workspace.getConfiguration('fly').get<string>('projectProfile', '').trim();
-        return p === 'release' ? ['--release'] : [];
+    /** `--release` / `--profile <name>` for the selected profile; none for debug. */
+    function selectedProfile(): string[] {
+        return profileArgs(flyConfig().get<string>('projectProfile', ''));
     }
+
+    const DEP_NAME = (v: string) => /^[a-z0-9_-]+$/.test(v) ? undefined : 'Name must match [a-z0-9_-]+';
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('fly.pkgBuild', async () => {
-            const projectDir = resolveManifestDir();
-            if (!projectDir) {
-                vscode.window.showWarningMessage(
-                    'Fly: no Manifest.fly found in this workspace. Run "Fly: Init Project" to create one.');
-                return;
-            }
-            const fly   = resolveFlyPath();
-            const cfg   = vscode.workspace.getConfiguration('fly');
-            const extra = cfg.get<string>('projectBuildArgs', '').trim();
+        vscode.commands.registerCommand('fly.pkgBuild', () => {
+            const cfg   = flyConfig();
             const force = cfg.get<boolean>('projectForceRebuild', false);
             // --force bypasses the per-target fingerprint cache; no clean needed.
-            const buildArgs = ['build', ...profileArgs(), ...(force ? ['--force'] : []),
-                               ...(extra ? extra.split(/\s+/) : [])];
-            const cmd = `cd "${projectDir.replace(/"/g, '\\"')}" && ${fly} ${buildArgs.join(' ')}`;
-
-            const task = new vscode.Task(
-                { type: 'fly', task: 'project-build' },
-                vscode.TaskScope.Workspace,
-                'Fly Build Project',
-                'fly',
-                new vscode.ShellExecution(cmd),
-                '$fly',
-            );
-            task.presentationOptions = {
-                reveal: vscode.TaskRevealKind.Always,
-                panel:  vscode.TaskPanelKind.Shared,
-                clear:  true,
-            };
-            await vscode.tasks.executeTask(task);
+            runFly('Build Project', [
+                'build', ...selectedProfile(), ...(force ? ['--force'] : []),
+                ...splitArgs(cfg.get<string>('projectBuildArgs', '')),
+            ]);
         }),
-        vscode.commands.registerCommand('fly.pkgRun',  () => runFly(['run',  ...profileArgs()])),
-        vscode.commands.registerCommand('fly.pkgTest', () => runFly(['test', ...profileArgs()])),
-        vscode.commands.registerCommand('fly.pkgClean', () => runFly(['clean', ...profileArgs()])),
-        vscode.commands.registerCommand('fly.pkgLock', () => runFly(['lock'])),
+        vscode.commands.registerCommand('fly.pkgRun',
+            () => runFly('Run Project', ['run', ...selectedProfile()], { focus: true })),
+        vscode.commands.registerCommand('fly.pkgTest',
+            () => runFly('Test Project', ['test', ...selectedProfile()])),
+        vscode.commands.registerCommand('fly.pkgClean',
+            () => runFly('Clean Project', ['clean', ...selectedProfile()])),
+        vscode.commands.registerCommand('fly.pkgLock',
+            () => runFly('Lock', ['lock'])),
         vscode.commands.registerCommand('fly.pkgInit', async () => {
             const folders = vscode.workspace.workspaceFolders;
             if (!folders || folders.length === 0) {
@@ -281,7 +253,7 @@ export function activate(context: vscode.ExtensionContext): void {
             const name = await vscode.window.showInputBox({
                 prompt: 'Package name',
                 value: path.basename(root),
-                validateInput: v => /^[a-z0-9_-]+$/.test(v) ? undefined : 'Name must match [a-z0-9_-]+',
+                validateInput: DEP_NAME,
             });
             if (!name) return;
             const version = await vscode.window.showInputBox({
@@ -290,62 +262,61 @@ export function activate(context: vscode.ExtensionContext): void {
             });
             if (!version) return;
 
-            const fly = resolveFlyPath();
-            if (!projectTerminal || projectTerminal.exitStatus !== undefined) {
-                projectTerminal = vscode.window.createTerminal('Fly');
-            }
-            projectTerminal.show(true);
-            projectTerminal.sendText(
-                `cd "${root.replace(/"/g, '\\"')}" && ${fly} init --name ${name} --version ${version}`);
+            void vscode.tasks.executeTask(flyTask(
+                'Init Project', 'project-init', resolveFlyPath(),
+                ['init', '--name', name, '--version', version], root));
         }),
         vscode.commands.registerCommand('fly.pkgRemove', async () => {
             const name = await vscode.window.showInputBox({
-                prompt: 'Dependency to remove',
-                validateInput: v => /^[a-z0-9_-]+$/.test(v) ? undefined : 'Name must match [a-z0-9_-]+',
+                prompt: 'Dependency to remove', validateInput: DEP_NAME,
             });
             if (!name) return;
-            runFly(['remove', name]);
+            runFly('Remove Dependency', ['remove', name]);
         }),
         vscode.commands.registerCommand('fly.pkgWhy', async () => {
             const name = await vscode.window.showInputBox({
                 prompt: 'Explain why this package is in the dependency graph',
-                validateInput: v => /^[a-z0-9_-]+$/.test(v) ? undefined : 'Name must match [a-z0-9_-]+',
+                validateInput: DEP_NAME,
             });
             if (!name) return;
-            runFly(['why', name]);
+            runFly('Why', ['why', name]);
         }),
         vscode.commands.registerCommand('fly.pkgSelectProfile', async () => {
-            const current = vscode.workspace.getConfiguration('fly')
-                .get<string>('projectProfile', '') || 'debug';
+            const current = flyConfig().get<string>('projectProfile', '').trim() || 'debug';
 
-            // Only these two: the manifest reader does not consume the schema's
-            // `profiles` field yet, so a custom name would change nothing.
-            const items = ['debug', 'release'].map(p => ({
+            // debug and release are built in; the manifest's `profiles` field
+            // can redefine them and declare any other name.
+            const projectDir = resolveManifestDir();
+            const names = manifestProfiles(projectDir ? readManifest(projectDir) : '');
+            if (!names.includes(current)) names.push(current);
+
+            const items = names.map(p => ({
                 label:       p,
                 description: p === current ? '$(check) active' : undefined,
+                detail:      p === 'debug'   ? 'fly build' :
+                             p === 'release' ? 'fly build --release' :
+                                               `fly build --profile ${p}`,
             }));
 
             const picked = await vscode.window.showQuickPick(items, {
                 title:       'Fly: Select Build Profile',
-                placeHolder: 'Profile used by Fly: Build / Run / Test',
+                placeHolder: 'Profile used by Fly: Build / Run / Test / Clean Project',
             });
             if (!picked) return;
 
             const value = picked.label === 'debug' ? '' : picked.label;
-            await vscode.workspace.getConfiguration('fly').update(
-                'projectProfile', value, vscode.ConfigurationTarget.Workspace,
-            );
+            await flyConfig().update('projectProfile', value, vscode.ConfigurationTarget.Workspace);
             vscode.window.showInformationMessage(`Fly profile set to "${picked.label}".`);
         }),
         // Used by the CodeLens actions in Manifest.fly (Why / Remove dependency).
-        vscode.commands.registerCommand('fly.pkgRunCmd', (args: string[]) => runFly(args)),
+        vscode.commands.registerCommand('fly.pkgRunCmd',
+            (args: string[]) => runFly(`fly ${args[0]}`, args)),
         // `fly add` writes a GIT dependency: it requires exactly one of
         // --tag/--branch/--rev and takes no version, so a registry dependency is
         // added by editing `dependencies` in the manifest directly.
         vscode.commands.registerCommand('fly.pkgAdd',  async () => {
             const name = await vscode.window.showInputBox({
-                prompt: 'Dependency name (e.g. my-lib)',
-                validateInput: v => /^[a-z0-9_-]+$/.test(v) ? undefined : 'Name must match [a-z0-9_-]+',
+                prompt: 'Dependency name (e.g. my-lib)', validateInput: DEP_NAME,
             });
             if (!name) return;
 
@@ -376,7 +347,7 @@ export function activate(context: vscode.ExtensionContext): void {
             );
             if (!kind) return;
 
-            runFly(['add', name, '--git', gitUrl, `--${refType}`, refValue,
+            runFly('Add Dependency', ['add', name, '--git', gitUrl, `--${refType}`, refValue,
                     ...(kind.label === 'dev-dependency' ? ['--dev'] : [])]);
         }),
     );
@@ -385,11 +356,33 @@ export function activate(context: vscode.ExtensionContext): void {
     createStatusBar(context);
 
     // ── LSP client (hover on symbols, go-to-definition, find references) ──
-    startLspClient(context);
+    setLspStateListener(() => void refreshStatusBar(vscode.window.activeTextEditor));
+    startLspClient();
+    context.subscriptions.push(
+        vscode.commands.registerCommand('fly.restartLsp', () => restartLspClient()),
+        // A new compiler (or server path) means a new server: the one running
+        // belongs to the toolchain that was selected before.
+        vscode.workspace.onDidChangeConfiguration(e => {
+            if (e.affectsConfiguration('fly.compilerPath') ||
+                e.affectsConfiguration('fly.lspPath')) {
+                void restartLspClient();
+            }
+            if (e.affectsConfiguration('fly.enableLsp')) {
+                // The fallback providers below are registered once, by the value
+                // this setting had at activation.
+                void vscode.window.showInformationMessage(
+                    'Fly: reload the window to apply the fly.enableLsp change.',
+                    'Reload Window',
+                ).then(choice => {
+                    if (choice) void vscode.commands.executeCommand('workbench.action.reloadWindow');
+                });
+            }
+        }),
+    );
 
     // Whether the language server owns the features it implements. Everything
     // below that DUPLICATES one of them registers only when it is off.
-    const lspActive = vscode.workspace.getConfiguration('fly').get<boolean>('enableLsp', true);
+    const lspActive = flyConfig().get<boolean>('enableLsp', true);
 
     // ── Document outline (OUTLINE panel + breadcrumbs) ────────────────────
     //
@@ -420,6 +413,15 @@ export function activate(context: vscode.ExtensionContext): void {
             FLY_SELECTOR,
             new FlyCompletionProvider(context.extensionPath),
             '.',   // trigger on dot
+        ),
+    );
+
+    // ── Format Document (fly fmt) ─────────────────────────────────────────
+    // The language server has no formatting provider: this is the only one.
+    context.subscriptions.push(
+        vscode.languages.registerDocumentFormattingEditProvider(
+            FLY_SELECTOR,
+            new FlyFormattingProvider(),
         ),
     );
 
@@ -474,7 +476,7 @@ export function activate(context: vscode.ExtensionContext): void {
     // Scan all .fly files at startup so the Problems panel reflects the full
     // project, not just files the user has explicitly opened.
     const runWorkspaceScan = async (): Promise<void> => {
-        const cfg = vscode.workspace.getConfiguration('fly');
+        const cfg = flyConfig();
         if (!cfg.get<boolean>('enableWorkspaceDiagnostics', true)) return;
         const uris = await vscode.workspace.findFiles('**/*.fly', '**/node_modules/**');
         const openPaths = new Set(
@@ -503,9 +505,7 @@ export function activate(context: vscode.ExtensionContext): void {
     context.subscriptions.push(
         vscode.debug.registerDebugAdapterDescriptorFactory('fly', {
             createDebugAdapterDescriptor(): vscode.ProviderResult<vscode.DebugAdapterDescriptor> {
-                const compiler = vscode.workspace.getConfiguration('fly')
-                    .get<string>('compilerPath', 'fly');
-                const dap = deriveDapPath(compiler);
+                const dap = deriveDapPath(resolveFlyPath());
                 if (path.dirname(dap) !== '.' && !fs.existsSync(dap)) {
                     void vscode.window.showErrorMessage(
                         `Fly: lldb-dap not found at "${dap}". It ships with the Fly ` +
@@ -519,45 +519,30 @@ export function activate(context: vscode.ExtensionContext): void {
         }),
     );
 
-    // ── Debug command (compile with --debug, launch via lldb-dap) ─────────
+    // ── Debug File (compile with debug info, launch via lldb-dap) ─────────
     context.subscriptions.push(
         vscode.commands.registerCommand('fly.debugFile', async () => {
-            const editor = vscode.window.activeTextEditor;
-            if (!editor || editor.document.languageId !== 'fly') {
-                vscode.window.showWarningMessage('Fly: Open a .fly file to debug.');
-                return;
-            }
-            await editor.document.save();
+            const filePath = await activeFlyFile('debug');
+            if (!filePath) return;
 
-            const cfg        = vscode.workspace.getConfiguration('fly');
-            const compiler   = cfg.get<string>('compilerPath', 'fly');
-            const debugArgs  = cfg.get<string>('debugBuildArgs', '--debug').trim();
-            const filePath   = editor.document.uri.fsPath;
-            const baseName   = path.basename(filePath, '.fly');
-            const outPath    = path.join(os.tmpdir(), baseName);
+            const cfg       = flyConfig();
+            const debugArgs = splitArgs(cfg.get<string>('debugBuildArgs', '--debug-symbols'));
+            const exe       = tempExe(filePath);
 
-            // Compile first; on success launch the debugger.
-            try {
-                require('child_process').execFileSync(
-                    compiler,
-                    [...singleFileArgs(filePath),
-                     ...debugArgs.split(/\s+/).filter(Boolean), '-o', outPath],
-                    { stdio: 'inherit' },
-                );
-            } catch {
-                vscode.window.showErrorMessage(
-                    `Fly: Compilation failed. Check the terminal for errors.`
-                );
-                return;
-            }
+            // Compile as a task — errors land in the Problems panel and the
+            // extension host is not blocked — and launch only on success.
+            const code = await runTask(flyTask(
+                'Build File (debug)', 'build-debug', resolveFlyPath(),
+                [...singleFileArgs(filePath), ...debugArgs, '-o', exe], fileCwd(filePath)));
+            if (code !== 0) return;
 
             await vscode.debug.startDebugging(undefined, {
                 type:    'fly',
                 request: 'launch',
                 name:    'Fly Debug',
-                program: outPath,
-                args:    [],
-                cwd:     path.dirname(filePath),
+                program: exe,
+                args:    splitArgs(cfg.get<string>('runArgs', '')),
+                cwd:     fileCwd(filePath),
             });
         }),
     );

@@ -1,3 +1,5 @@
+import * as fs from 'fs';
+import * as path from 'path';
 import * as vscode from 'vscode';
 import { deriveLspPath } from '../compiler/finder';
 // Type-only import: erased at compile time, generates NO runtime require().
@@ -12,8 +14,15 @@ import type {
 } from 'vscode-languageclient/node';
 
 let client: LCType | undefined;
+let stateListener: (() => void) | undefined;
 
-function resolveLspPath(): string {
+/** Called whenever the client starts, stops or changes state (status bar). */
+export function setLspStateListener(fn: () => void): void {
+    stateListener = fn;
+}
+
+/** The fly-lsp binary: fly.lspPath, else the one next to fly.compilerPath. */
+export function resolveLspPath(): string {
     const cfg = vscode.workspace.getConfiguration('fly');
     const explicit = cfg.get<string>('lspPath', '').trim();
     if (explicit) return explicit;
@@ -23,9 +32,25 @@ function resolveLspPath(): string {
     return deriveLspPath(compilerPath);
 }
 
-export function startLspClient(context: vscode.ExtensionContext): void {
+/**
+ * False only when the server is named by a path that does not exist. A bare
+ * name ("fly-lsp") resolves through PATH, which only spawning it can tell.
+ */
+export function lspBinaryPresent(serverPath: string): boolean {
+    if (path.basename(serverPath) === serverPath) return true;
+    return fs.existsSync(serverPath);
+}
+
+export function startLspClient(): void {
     const cfg = vscode.workspace.getConfiguration('fly');
     if (!cfg.get<boolean>('enableLsp', true)) return;
+    if (client) return;
+
+    const serverPath = resolveLspPath();
+    // A missing binary is a configuration state, not a crash: the status bar
+    // says so, and starting the client anyway would only raise an error popup
+    // at every window load.
+    if (!lspBinaryPresent(serverPath)) return;
 
     let LanguageClient: typeof LCType;
     let TransportKind: typeof TKType;
@@ -43,8 +68,6 @@ export function startLspClient(context: vscode.ExtensionContext): void {
         return;
     }
 
-    const serverPath = resolveLspPath();
-
     const serverOptions: ServerOptions = {
         run:   { command: serverPath, transport: TransportKind.stdio },
         debug: { command: serverPath, transport: TransportKind.stdio },
@@ -58,22 +81,46 @@ export function startLspClient(context: vscode.ExtensionContext): void {
         outputChannelName: 'Fly Language Server',
     };
 
-    client = new LanguageClient(
+    const c = new LanguageClient(
         'fly-lsp',
         'Fly Language Server',
         serverOptions,
         clientOptions,
     );
-
-    // LanguageClient is Disposable in v9; start() returns Promise<void>
-    context.subscriptions.push(client);
-    void client.start();
+    client = c;
+    c.onDidChangeState(() => stateListener?.());
+    void c.start().then(() => stateListener?.(), () => stateListener?.());
+    stateListener?.();
 }
 
-export function stopLspClient(): Thenable<void> | undefined {
+export async function stopLspClient(): Promise<void> {
     const c = client;
     client = undefined;
-    return c?.stop();
+    if (!c) return;
+    try {
+        await c.stop();
+    } catch {
+        // A server that already died cannot be stopped; nothing to do.
+    }
+    try {
+        await c.dispose();
+    } catch {
+        // idem
+    }
+    stateListener?.();
+}
+
+// Restarts run one after the other: selecting a compiler changes two settings
+// in a row, and two overlapping stop/start pairs would leave two servers.
+let restarting: Promise<void> = Promise.resolve();
+
+/** Stop the server and start it again with the current settings. */
+export function restartLspClient(): Promise<void> {
+    restarting = restarting.then(async () => {
+        await stopLspClient();
+        startLspClient();
+    });
+    return restarting;
 }
 
 /** Returns the active LanguageClient, or undefined if not started. */

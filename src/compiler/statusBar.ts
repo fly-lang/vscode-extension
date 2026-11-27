@@ -1,10 +1,23 @@
-import * as fs   from 'fs';
 import * as vscode from 'vscode';
-import { detectVersion, deriveLspPath } from './finder';
-import { getLspClient } from '../lsp/client';
+import { detectVersion } from './finder';
+import { getLspClient, resolveLspPath, lspBinaryPresent } from '../lsp/client';
 
 let item:    vscode.StatusBarItem | undefined;
 let lspItem: vscode.StatusBarItem | undefined;
+
+// `fly --version` of the configured compiler, asked once per path: the status
+// bar refreshes at every editor switch, and spawning the compiler each time
+// was the only cost of switching tabs.
+let versionFor: string | undefined;
+let versionIs:  string | undefined;
+
+async function compilerVersion(flyPath: string, force: boolean): Promise<string | undefined> {
+    if (!force && versionFor === flyPath) return versionIs;
+    const v = await detectVersion(flyPath);
+    versionFor = flyPath;
+    versionIs  = v;
+    return v;
+}
 
 export function createStatusBar(context: vscode.ExtensionContext): void {
     // ── Compiler version item (left, priority 100) ────────────────────────
@@ -23,8 +36,7 @@ export function createStatusBar(context: vscode.ExtensionContext): void {
         vscode.StatusBarAlignment.Left,
         99,
     );
-    lspItem.command = 'fly.selectCompiler';
-    lspItem.tooltip  = 'Fly Language Server status';
+    lspItem.command = 'fly.restartLsp';
     context.subscriptions.push(lspItem);
 
     context.subscriptions.push(
@@ -34,8 +46,9 @@ export function createStatusBar(context: vscode.ExtensionContext): void {
     context.subscriptions.push(
         vscode.workspace.onDidChangeConfiguration(e => {
             if (e.affectsConfiguration('fly.compilerPath') ||
-                e.affectsConfiguration('fly.lspPath')) {
-                void refresh(vscode.window.activeTextEditor);
+                e.affectsConfiguration('fly.lspPath') ||
+                e.affectsConfiguration('fly.enableLsp')) {
+                void refresh(vscode.window.activeTextEditor, true);
             }
         }),
     );
@@ -43,7 +56,14 @@ export function createStatusBar(context: vscode.ExtensionContext): void {
     void refresh(vscode.window.activeTextEditor);
 }
 
-export async function refresh(editor: vscode.TextEditor | undefined): Promise<void> {
+/**
+ * Redraw both items. `force` asks the compiler for its version again (the
+ * binary behind the same path may have been replaced by a new install).
+ */
+export async function refresh(
+    editor: vscode.TextEditor | undefined,
+    force: boolean = false,
+): Promise<void> {
     if (!item || !lspItem) return;
 
     const isFly = editor?.document.languageId === 'fly';
@@ -51,9 +71,7 @@ export async function refresh(editor: vscode.TextEditor | undefined): Promise<vo
 
     const cfg     = vscode.workspace.getConfiguration('fly');
     const flyPath = cfg.get<string>('compilerPath', 'fly');
-    const lspPath = cfg.get<string>('lspPath', '').trim() || deriveLspPath(flyPath);
-    const version = await detectVersion(flyPath);
-    const lspOk   = fs.existsSync(lspPath);
+    const version = await compilerVersion(flyPath, force);
 
     // Compiler item
     item.text = version
@@ -61,40 +79,35 @@ export async function refresh(editor: vscode.TextEditor | undefined): Promise<vo
         : `$(warning) fly (not found)`;
     item.show();
 
-    // LSP status item — reads LanguageClient state if available.
-    const client = getLspClient();
-    if (!lspOk) {
+    // LSP status item
+    const lspPath = resolveLspPath();
+    const client  = getLspClient();
+    if (!cfg.get<boolean>('enableLsp', true)) {
+        lspItem.text    = `$(circle-slash) LSP`;
+        lspItem.tooltip = 'Language server disabled (fly.enableLsp = false)';
+    } else if (!lspBinaryPresent(lspPath)) {
         lspItem.text    = `$(warning) LSP`;
         lspItem.tooltip = `fly-lsp not found at "${lspPath}"`;
     } else if (!client) {
-        lspItem.text    = `$(circle-slash) LSP`;
-        lspItem.tooltip = 'Language server disabled (fly.enableLsp = false)';
+        lspItem.text    = `$(error) LSP`;
+        lspItem.tooltip = 'Language server not running — click to start it';
     } else {
-        // vscode-languageclient v9 exposes state via client.state
-        // State: 1=Starting, 2=Running, 3=Stopping, 4=Stopped
-        try {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const state: number = (client as any).state ?? 2;
-            switch (state) {
-            case 1:
-                lspItem.text    = `$(loading~spin) LSP`;
-                lspItem.tooltip = 'Language server starting…';
-                break;
-            case 2:
-                lspItem.text    = `$(check) LSP`;
-                lspItem.tooltip = 'Language server running';
-                break;
-            case 3:
-                lspItem.text    = `$(loading~spin) LSP`;
-                lspItem.tooltip = 'Language server stopping…';
-                break;
-            default:
-                lspItem.text    = `$(error) LSP`;
-                lspItem.tooltip = 'Language server stopped';
-            }
-        } catch {
+        // vscode-languageclient State: Stopped = 1, Running = 2, Starting = 3.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const state: number = (client as any).state ?? 2;
+        switch (state) {
+        case 3:
+            lspItem.text    = `$(loading~spin) LSP`;
+            lspItem.tooltip = 'Language server starting…';
+            break;
+        case 2:
             lspItem.text    = `$(check) LSP`;
-            lspItem.tooltip = 'Language server active';
+            lspItem.tooltip = 'Language server running — click to restart it';
+            break;
+        default:
+            lspItem.text    = `$(error) LSP`;
+            lspItem.tooltip = 'Language server stopped — click to restart it '
+                            + '(see the "Fly Language Server" output channel)';
         }
     }
     lspItem.show();
