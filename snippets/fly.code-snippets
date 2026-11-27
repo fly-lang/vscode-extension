@@ -42,7 +42,7 @@
   "Function (void)": {
     "prefix": "fn",
     "body": [
-      "${1:name}(${2}) {",
+      "void ${1:name}(${2}) {",
       "\t$0",
       "}"
     ],
@@ -52,7 +52,7 @@
   "Public function (void)": {
     "prefix": "pfn",
     "body": [
-      "public ${1:name}(${2}) {",
+      "public void ${1:name}(${2}) {",
       "\t$0",
       "}"
     ],
@@ -66,7 +66,7 @@
       "\treturn $0",
       "}"
     ],
-    "description": "Function with return type — assign to 'out' to return a value"
+    "description": "Function with return type — every path must return a value"
   },
 
   "Public function with return type": {
@@ -76,7 +76,7 @@
       "\treturn $0",
       "}"
     ],
-    "description": "Public function with return type — assign to 'out' to return a value"
+    "description": "Public function with return type — every path must return a value"
   },
 
   "Generic function": {
@@ -239,12 +239,11 @@
       "switch ${1:expr} {",
       "\tcase ${2:value}:",
       "\t\t$0",
-      "\t\tbreak",
       "\tdefault:",
-      "\t\tbreak",
+      "\t\t",
       "}"
     ],
-    "description": "Switch statement"
+    "description": "Switch statement — no fall-through: a case ends where the next begins"
   },
 
   "For": {
@@ -270,7 +269,63 @@
   "New (class instance)": {
     "prefix": "new",
     "body": ["${1:Type} ${2:obj} = new ${1:Type}($3)"],
-    "description": "Class instance — heap-allocated, released automatically at scope exit unless ownership escapes"
+    "description": "Class instance on the heap — released only by 'delete'; nothing happens at scope exit"
+  },
+
+  "New unique (scope-bound owner)": {
+    "prefix": "newu",
+    "body": ["${1:Type} ${2:obj} = new unique ${1:Type}($3)"],
+    "description": "One owner — released at the end of its scope; assignment and return move it"
+  },
+
+  "New shared (reference counted)": {
+    "prefix": "news",
+    "body": ["${1:Type} ${2:obj} = new shared ${1:Type}($3)"],
+    "description": "Reference-counted object — released with its last holder"
+  },
+
+  "Weak reference": {
+    "prefix": "weak",
+    "body": ["${1:Type} ${2:ref} = weak ${3:holder}"],
+    "description": "Observe a 'new shared' object without holding it — reads null once it is gone"
+  },
+
+  "Delete": {
+    "prefix": "del",
+    "body": ["delete ${1:obj}"],
+    "description": "Release an object made with plain 'new' — runs free() if declared, then sets the variable to null"
+  },
+
+  "For in": {
+    "prefix": "forin",
+    "body": [
+      "for ${1:item} in ${2:items} {",
+      "\t$0",
+      "}"
+    ],
+    "description": "Iterate an array or a collection"
+  },
+
+  "Constructor": {
+    "prefix": "ctor",
+    "body": [
+      "public ${1:Name}(${2}) {",
+      "\t$0",
+      "}"
+    ],
+    "description": "Constructor — no return type; a base constructor runs only if called with super(...)"
+  },
+
+  "Const field": {
+    "prefix": "cfield",
+    "body": ["const ${1:int} ${2:name}"],
+    "description": "Instance const field — written once, in a constructor of this class (or give it an initializer)"
+  },
+
+  "Static const": {
+    "prefix": "sconst",
+    "body": ["static const ${1:int} ${2:NAME} = ${3:0}"],
+    "description": "Class constant — set only by its (constant) initializer"
   },
 
   "Return (value)": {
@@ -344,8 +399,8 @@
 
   "Class field": {
     "prefix": "field",
-    "body": ["${1|public,private|} ${2:int} ${3:name}"],
-    "description": "Class field declaration"
+    "body": ["${1|public,private,protected|} ${2:int} ${3:name}${4: = ${5:0}}"],
+    "description": "Class field declaration — the optional initializer runs at creation, before any constructor"
   },
 
   "Array declaration": {

@@ -18,7 +18,8 @@ Full language support for the [Fly programming language](https://flylang.org) in
 - **File icons** for dark and light themes
 - **Auto-closing** brackets and parentheses
 - **Smart folding** — AST-aware folding for function and class bodies, plus manual `// #region` / `// #endregion` markers
-- **Built-in snippets** — 40+ snippets covering namespaces, functions, classes, interfaces, suites, test blocks, control flow, allocation, error handling, and common patterns (`field`, `arr`, `getset`, `list`, `iface`, …)
+- **Format Document** — runs the toolchain's own formatter, `fly fmt`, on the buffer (works with **Format On Save**); a file that does not parse is left as is
+- **Built-in snippets** — 50 snippets covering namespaces, functions, classes, interfaces, suites, test blocks, control flow, ownership (`new`, `newu`, `news`, `weak`, `del`), error handling, and common patterns (`field`, `cfield`, `ctor`, `arr`, `forin`, `getset`, `list`, `iface`, …)
 - **Onboarding walkthrough** — **Help → Get Started → "Get Started with Fly"** guides you through compiler setup, first program, build/run, and project management
 
 ### Testing
@@ -32,7 +33,7 @@ Fly's test system is intrinsic to the language — tests live inside production 
 - **Hover documentation** on `suite`, `test`, and `case` explains all valid contexts, including the distinction between switch-case and test-case.
 
 ### Language intelligence (via `fly-lsp`)
-- **Hover** — documentation for keywords, built-in types, and user-defined symbols (functions, classes, variables)
+- **Hover** — documentation for keywords, modifiers (`const`, `static`, `private`, `protected`), ownership qualifiers (`new unique`, `new shared`, `weak`), built-in types, and user-defined symbols (functions, classes, variables)
 - **Completions** — context-aware completions from the current scope and all compiled modules
 - **Go to Definition** (`F12`) — jump to the declaration of any symbol
 - **Go to Type Definition** — from a variable, jump to its type's class declaration
@@ -47,18 +48,21 @@ Fly's test system is intrinsic to the language — tests live inside production 
 - **Semantic tokens** — highlighting driven by what a name *resolves to*, not by the grammar alone
 
 ### Diagnostics
-- **Live diagnostics** — compiler errors and warnings shown inline on save via the `$fly` problem matcher
-- **Workspace diagnostics** — all `.fly` files in the project are checked at startup, not only open ones; new files are checked automatically
+- **Live diagnostics** — compiler errors and warnings shown inline, published by the language server for every file of the project
+- **Build diagnostics** — the build, run and project commands are tasks: what the compiler reports lands in the **Problems** panel through the `$fly` problem matcher
+- **Without the language server** (`fly.enableLsp` off) the extension runs the compiler itself on save, and scans the workspace at startup
 
 ### Build, run & debug
 - **Build** (`Ctrl+Shift+B`) — compile the current file; errors appear in the **Problems** panel
-- **Run** (`Ctrl+F5`) — compile and execute in the integrated terminal
-- **Debug** (`F5`) — compile with `--debug` and launch under the **lldb-dap bundled with the Fly toolchain** (`bin/lldb-dap`, next to `fly`) — no third-party debugger extension needed
-- Breakpoints in `.fly` files are respected by the debugger. Note: the self-host compiler does not emit full DWARF for user programs yet, so source-level stepping is limited.
+- **Run** (`Ctrl+F5`) — compile, then run the program in a task terminal; it is not started if the compilation fails
+- **Debug** (`F5`) — compile with `--debug-symbols` and launch under the **lldb-dap bundled with the Fly toolchain** (`bin/lldb-dap`, next to `fly`) — no third-party debugger extension needed
+- Breakpoints in `.fly` files are respected by the debugger; source lines, parameters and local variables are in the debug information.
+- The commands start the compiler directly, with no shell in between, so they behave the same whatever the terminal shell is (PowerShell, cmd, bash, …) and whatever characters the paths contain.
 
 ### Projects (`Manifest.fly`)
-- **Manifest support** — field completions, hover docs for every manifest field, git-URL links, and CodeLens actions on each dependency
+- **Manifest support** — completions for the fields and for target / profile / dependency entries, hover docs for every manifest, target and profile field, git-URL links, and CodeLens actions on each dependency
 - **`fly init / build / run / test / add / remove / why / lock / clean`** from the Command Palette and the editor title bar
+- **Profiles** — **Fly: Select Profile** lists `debug`, `release` and every profile the manifest declares in `profiles`; the project commands then pass `--release` or `--profile <name>`
 - The manifest is **Fly source**, not TOML — a class extending `fly.meta.Manifest` — so it gets the same highlighting and language-server support as the rest of your code
 
 ---
@@ -103,17 +107,18 @@ To run in development mode, open the folder in VS Code and press **F5**. This co
 | `fly.compilerPath` | `fly` | Path to the Fly compiler binary |
 | `fly.lspPath` | _(auto)_ | Path to `fly-lsp`; auto-discovered next to `fly.compilerPath` |
 | `fly.enableLsp` | `true` | Enable the language server (hover, go-to-definition, references, inlay hints, semantic tokens, workspace symbols, …) |
-| `fly.enableDiagnostics` | `true` | Run compiler on save and show inline diagnostics |
-| `fly.enableWorkspaceDiagnostics` | `true` | Scan all `.fly` files in the workspace at startup |
+| `fly.enableDiagnostics` | `true` | Run compiler on save and show inline diagnostics (only while `fly.enableLsp` is off) |
+| `fly.enableWorkspaceDiagnostics` | `true` | Scan all `.fly` files in the workspace at startup (only while `fly.enableLsp` is off) |
 | `fly.buildArgs` | _(empty)_ | Extra flags appended to `fly` when running **Fly: Build File** |
-| `fly.debugBuildArgs` | `--debug` | Compiler flags used by **Fly: Debug File** |
-| `fly.projectProfile` | _(empty = debug)_ | Profile for the project commands: empty or `release` |
+| `fly.runArgs` | _(empty)_ | Arguments passed to the program by **Fly: Run File** and **Fly: Debug File** |
+| `fly.debugBuildArgs` | `--debug-symbols` | Compiler flags used by **Fly: Debug File** |
+| `fly.projectProfile` | _(empty = debug)_ | Profile for the project commands: empty, `release`, or a profile declared in the manifest |
 | `fly.projectForceRebuild` | `false` | Pass `--force` to **Fly: Build Project**, bypassing the fingerprint cache |
-| `fly.projectBuildArgs` | _(empty)_ | Extra flags appended to `fly build`, e.g. `--target mybin` |
+| `fly.projectBuildArgs` | _(empty)_ | Extra flags appended to `fly build`, e.g. `--target mybin` or `--out-dir dist` |
 
 Use **Fly: Select Compiler** from the Command Palette to pick the compiler interactively — the extension auto-discovers all Fly installations and updates `fly.lspPath` automatically.
 
-The status bar shows two items when a `.fly` file is active: `$(tools) fly X.Y.Z` (compiler version, click to change) and `$(check) LSP` / `$(error) LSP` (language server connection state).
+The status bar shows two items when a `.fly` file is active: `$(tools) fly X.Y.Z` (compiler version, click to change) and `$(check) LSP` / `$(error) LSP` (language server state, click to restart it). Changing `fly.compilerPath` or `fly.lspPath` restarts the language server by itself.
 
 ## Commands
 
@@ -125,8 +130,10 @@ Open the Command Palette with `Ctrl+Shift+P` (`Cmd+Shift+P` on macOS) and type *
 |---|---|---|
 | **Fly: Select Compiler** | — | Open a quick-pick to choose the active Fly installation. Auto-fills `fly.lspPath` from the same directory. |
 | **Fly: Build File** | `Ctrl+Shift+B` | Compile the current `.fly` file. Errors appear in the **Problems** panel via the `$fly` problem matcher. |
-| **Fly: Run File** | `Ctrl+F5` | Compile and immediately run the current `.fly` file in the integrated terminal. Uses `&&` — the program is not launched if compilation fails. |
-| **Fly: Debug File** | `F5` | Compile with `--debug` and launch the program under the toolchain's bundled `lldb-dap`. Breakpoints in `.fly` files are respected. |
+| **Fly: Run File** | `Ctrl+F5` | Compile and immediately run the current `.fly` file (with `fly.runArgs`). The program is not launched if compilation fails. |
+| **Fly: Debug File** | `F5` | Compile with `--debug-symbols` and launch the program under the toolchain's bundled `lldb-dap`. Breakpoints in `.fly` files are respected. |
+| **Fly: Restart Language Server** | — | Stop `fly-lsp` and start it again (also: click the LSP item in the status bar). |
+| **Format Document** | `Shift+Alt+F` | Format the file with `fly fmt`. |
 
 The **Debug** `$(debug-alt)`, **Run** `$(run)`, and **Build** `$(play)` buttons appear in the editor title bar whenever a `.fly` file is active.
 
@@ -144,7 +151,7 @@ walking up from the active file.
 | **Fly: Add Dependency** | — | Interactive: package name, git URL, ref type (`tag` / `branch` / `rev`), and whether it is a dev-dependency; then `fly add`, which also re-locks. |
 | **Fly: Remove Dependency** | — | Run `fly remove <name>` and re-lock. |
 | **Fly: Why Is This Dependency Here?** | — | Run `fly why <name>` to explain a package's presence in the graph. |
-| **Fly: Select Profile** | — | Choose `debug` or `release` for the commands above. |
+| **Fly: Select Profile** | — | Choose `debug`, `release` or a profile declared in the manifest for the commands above. |
 | **Fly: Clean Project** | — | Run `fly clean` for the active profile. |
 | **Fly: Lock (Update Lock.fly)** | — | Run `fly lock` to re-resolve dependencies and regenerate `Lock.fly`. |
 
@@ -189,12 +196,12 @@ Debugging uses the `lldb-dap` binary shipped with the Fly toolchain, expected ne
 
 ### Diagnostics appear only for open files
 
-Enable `fly.enableWorkspaceDiagnostics` (default: `true`) to scan the entire workspace at startup.
+With the language server on, it reports the whole project the file belongs to (the nearest `Manifest.fly` upward, else the workspace folder). With `fly.enableLsp` off, enable `fly.enableWorkspaceDiagnostics` (default: `true`) to scan the entire workspace at startup.
 
 ### The LSP status bar shows `$(error) LSP` or `$(circle-slash) LSP`
 
 - `$(circle-slash)`: LSP is disabled — set `fly.enableLsp` to `true`.
-- `$(error)`: the server crashed or stopped — check the **Fly Language Server** output channel (View → Output → Fly Language Server) for the error.
+- `$(error)`: the server crashed or stopped — check the **Fly Language Server** output channel (View → Output → Fly Language Server) for the error, then click the item (or run **Fly: Restart Language Server**) to start it again.
 
 ## Contributing
 

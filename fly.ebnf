@@ -32,19 +32,24 @@ top_decl = function_decl
 
 (* ── Modifiers ──────────────────────────────────────────────────────────── *)
 
+(* 'protected' applies only to the methods and attributes of a class. *)
 modifier = "public" | "private" | "protected"
-         | "const"  | "static" ;
+         | "const"  | "static"
+         | "abstract" | "final" ;
 
 modifier_list = modifier , { modifier } ;
 
 (* ── Types ──────────────────────────────────────────────────────────────── *)
 
-builtin_type = "bool"   | "byte"  | "char"
+(* There is no 'char': a character is a one-character string.
+   'complex' is reserved but not usable yet. *)
+builtin_type = "bool"   | "byte"
              | "short"  | "ushort"
              | "int"    | "uint"
              | "long"   | "ulong"
              | "float"  | "double"
-             | "string" | "void"  | "error" ;
+             | "string" | "pointer"
+             | "void"   | "error" ;
 
 type_ref = builtin_type
          | array_type
@@ -96,8 +101,8 @@ class_decl = [ modifier_list ] , "class" , identifier
            , [ ":" , base_list ]
            , "{" , { class_member } , "}" ;
 
-(* Structs support only struct-to-struct inheritance.
-   Plain new allocates on the stack; qualifiers (unique/shared/weak) move to heap. *)
+(* Structs support only struct-to-struct inheritance. A struct is a value: it
+   lives on the stack, or inline in the object that contains it. *)
 struct_decl = [ modifier_list ] , "struct" , identifier
             , [ "<" , type_param_list , ">" ]
             , [ ":" , base_list ]
@@ -113,6 +118,10 @@ base_list = qualified_name , { "," , qualified_name } ;
 class_member     = field_decl | method_decl ;
 interface_member = method_signature ;
 
+(* A field initializer runs at creation, before any constructor; the one of a
+   static field must be a constant expression. A 'static const' is set only by
+   its initializer; an instance 'const' without one is written once, in a
+   constructor of the class that declares it. *)
 field_decl = [ modifier_list ]
            , type_ref
            , identifier
@@ -132,8 +141,7 @@ method_decl = [ modifier_list ]
 method_signature = [ modifier_list ]
                  , [ return_type ]
                  , identifier
-                 , "(" , [ param_list ] , ")"
-                 , ";" ;
+                 , "(" , [ param_list ] , ")" ;
 
 (* ── Enum ───────────────────────────────────────────────────────────────── *)
 
@@ -176,7 +184,8 @@ assign_op = "=" | "+=" | "-=" | "*=" | "/=" | "%="
 
 lvalue = identifier , { ( "." , identifier | "[" , expr , "]" ) } ;
 
-(* Frees a heap-allocated class instance (created with plain new or smart ptr) *)
+(* Releases a class object made with plain new: runs its free() if declared,
+   frees the memory and sets the variable to null. *)
 delete_stmt = "delete" , identifier ;
 
 (* ── Conditional ────────────────────────────────────────────────────────── *)
@@ -189,14 +198,17 @@ elsif_clause = "elsif" , condition , ( block | stmt ) ;
 
 else_clause = "else" , ( block | stmt ) ;
 
-condition = expr | "(" , expr , ")" ;
+(* Parentheses around the WHOLE condition are an error ('if (x) {'); grouping a
+   part of it is fine ('if (a + b) * 2 > c {'). *)
+condition = expr ;
 
 (* ── Switch ─────────────────────────────────────────────────────────────── *)
 
 switch_stmt = "switch" , condition
             , "{" , { case_clause } , [ default_clause ] , "}" ;
 
-case_clause    = "case"    , expr , ":" , { stmt } ;
+(* No fall-through: a case ends where the next one begins. *)
+case_clause    = "case"    , expr , { "," , expr } , ":" , { stmt } ;
 default_clause = "default" ,       ":" , { stmt } ;
 
 (* ── Test system ─────────────────────────────────────────────────────────── *)
@@ -229,7 +241,8 @@ case_step = "case" , string_literal , ":" , ( block | stmt ) ;
 (* ── Loops ──────────────────────────────────────────────────────────────── *)
 
 for_stmt = "for"
-         , ( for_init , ";" , [ expr ] , ";" , for_post )
+         , ( for_init , ";" , [ expr ] , ";" , for_post
+           | identifier , "in" , expr )                  (* for item in items *)
          , ( block | stmt ) ;
 
 for_init      = var_decl_stmt , { "," , var_decl_stmt } ;
@@ -253,14 +266,12 @@ continue_stmt = "continue" ;
      integer code, string message, and/or object instance (in any order). *)
 fail_stmt = "fail" , [ expr , [ "," , expr , [ "," , expr ] ] ] ;
 
-(* handle intercepts errors raised inside the guarded block/statement.
-   Forms:
-     handle { ... }                      -- unnamed; error is silently swallowed
-     error err handle { ... }            -- named; inspect 'err' after the block
-     error err handle singleStatement    -- shorthand for a single call
-   Wildcard cannot be combined with alias. Error does NOT unwind the stack;
-   callee fail writes to the error struct and returns void. *)
-handle_stmt = [ "error" , identifier ] , "handle" , ( block | stmt ) ;
+(* handle guards the statements of its block: a failure inside it, or in
+   anything it calls, leaves the block at once and is consumed there. It binds
+   the implicit 'error' variable, tested afterwards with 'if error { ... }'; a
+   named error variable cannot be attached. A failure nobody handles is not
+   ignorable: every caller stops right after the call. *)
+handle_stmt = "handle" , block ;
 
 expr_stmt = expr ;
 
@@ -271,6 +282,7 @@ expr = assignment_expr
      | binary_expr
      | unary_expr
      | new_expr
+     | weak_expr
      | postfix_expr
      | primary ;
 
@@ -290,19 +302,25 @@ binary_op = "||" | "&&"
 
 unary_expr = ( "!" | "++" | "--" | "-" | "+" ) , expr ;
 
-(* new allocates an object.
-   Without qualifier  — struct: stack alloca; class: heap malloc (needs delete).
-   With qualifier     — always heap; lifetime managed automatically:
-     new unique T()   single owner, freed at scope exit, not copyable
-     new shared T()   reference-counted, freed when last ref exits scope
-     new weak T()     no refcount, each holder frees independently at scope exit
+(* new creates an object.
+   Without qualifier  — struct: a value on the stack; class: on the heap,
+                        released only by 'delete' (nothing happens at scope exit).
+   With qualifier     — class on the heap, released without 'delete':
+     new unique T()   one owner, released at the end of its scope; assignment
+                      and return move it (the source reads null)
+     new shared T()   reference-counted, released with its last holder
+   'weak h' observes a 'new shared' object without holding it and reads null
+   once the object is gone; 'new weak T()' is an error.
+   unique / shared / weak are not reserved words: they mean something only here.
    Generic instantiation: new Wrapper<int>(42) *)
 new_expr = "new"
-         , [ smart_ptr_kind ]
+         , [ ownership ]
          , type_ref
          , "(" , [ arg_list ] , ")" ;
 
-smart_ptr_kind = "unique" | "shared" | "weak" ;
+ownership = "unique" | "shared" ;
+
+weak_expr = "weak" , identifier ;
 
 postfix_expr = expr , "++"
              | expr , "--"
@@ -315,6 +333,7 @@ arg_list = expr , { "," , expr } ;
 primary = identifier
         | literal
         | array_literal
+        | struct_literal
         | "(" , expr , ")" ;
 
 (* ── Literals ───────────────────────────────────────────────────────────── *)
@@ -326,24 +345,30 @@ literal = integer_literal
         | bool_literal
         | null_literal ;
 
-integer_literal = decimal_literal | hex_literal ;
-decimal_literal = digit , { digit } ;
-hex_literal     = ( "0x" | "0X" ) , hex_digit , { hex_digit } ;
+(* Decimal only: there are no hexadecimal, octal or binary literals. *)
+integer_literal = digit , { digit } ;
 
 float_literal = digit , { digit } , "." , { digit } ;
 
-string_literal = '"' , { string_char | escape_seq } , '"' ;
+(* A raw string has no escape sequences and may span lines. *)
+string_literal = '"' , { string_char | escape_seq } , '"'
+               | '"""' , { any_char } , '"""' ;
 char_literal   = "'" , ( char_char  | escape_seq ) , "'" ;
 
 escape_seq = "\"
            , ( "n" | "r" | "t" | "\" | "'" | '"' | "0"
            | "x" , hex_digit , hex_digit
-           | "u" , hex_digit , hex_digit , hex_digit , hex_digit ) ;
+           | "u" , "{" , hex_digit , { hex_digit } , "}" ) ;   (* 1 to 6 digits *)
 
 bool_literal = "true" | "false" ;
 null_literal = "null" ;
 
 array_literal = "{" , [ expr , { "," , expr } , [ "," ] ] , "}" ;
+
+(* Point p = { x = 1, y = 2 } — fields by name, the ones left out keep their
+   initializer (or the zero value). *)
+struct_literal = "{" , field_init , { "," , field_init } , "}" ;
+field_init     = identifier , "=" , expr ;
 
 (* ── Annotation ─────────────────────────────────────────────────────────── *)
 

@@ -49,6 +49,18 @@ export function findManifestDir(startDir: string): string | undefined {
     }
 }
 
+/** The text of the manifest in `dir`, or "" when it cannot be read. */
+export function readManifest(dir: string): string {
+    for (const name of MANIFEST_NAMES) {
+        try {
+            return fs.readFileSync(path.join(dir, name), 'utf8');
+        } catch {
+            // try the next spelling
+        }
+    }
+    return '';
+}
+
 /** Best-effort project root: manifest dir above the active file > workspace root. */
 export function resolveManifestDir(): string | undefined {
     const editor = vscode.window.activeTextEditor;

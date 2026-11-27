@@ -48,7 +48,7 @@ const SKIP_NAMES = new Set([
     'if', 'import', 'in', 'int', 'interface', 'long', 'namespace', 'new',
     'null', 'pointer', 'private', 'protected', 'public', 'return',
     'short', 'static', 'string', 'struct', 'suite', 'switch', 'test',
-    'true', 'uint', 'ulong', 'unset', 'ushort', 'void', 'while',
+    'true', 'uint', 'ulong', 'ushort', 'void', 'while',
 ]);
 
 export class FlyDocumentSymbolProvider implements vscode.DocumentSymbolProvider {

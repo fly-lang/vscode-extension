@@ -46,9 +46,16 @@ function makeFields(flyVer: string): vscode.CompletionItem[] {
           'Author strings.'),
     field('linkLibs',    'string[] linkLibs = { "${1:m}" }',
           'Native libraries to link (without the `-l` prefix).'),
-    field('targets',     'Target[] targets = { new Target("${1:app}", "${2:src/main.fly}", "${3}") }',
-          'Build targets. `(name, path, lib)` — an empty `lib` is an executable, '
-        + 'else `"static"`, `"dynamic"` or `"both"`.'),
+    field('targets',     'Target[] targets = {\n\t{ name = "${1:app}", srcDirs = { "${2:src}" }${3:, entry = "${4:src/main.fly}"} }\n}',
+          'Build targets, as struct literals with named fields: `name`, then `srcDirs` '
+        + '(or `path` / `files`), `entry`, `lib` (`"static"`, `"dynamic"`, `"both"`; '
+        + 'omitted = executable), `os`, `artifact`, `libDirs`, `linkLibs`, `flags`, '
+        + '`dir`, `copy`, `rpaths`. The short form `new Target(name, path, lib)` still works.'),
+    field('profiles',    'Profile[] profiles = {\n\t{ name = "${1:release}", optLevel = ${2:3}, debugInfo = ${3:false} }\n}',
+          'Build profiles, selected with `fly build --profile <name>` (`--release` = '
+        + '`release`). Fields: `name`, `optLevel`, `debugInfo`, `assertions`, `lto`, '
+        + '`strip`, `warningsAsErrors`, `debugPrefixMap`. A field left out keeps the '
+        + 'built-in default of that profile.'),
     field('dependencies', 'Dependency[] dependencies = { new Dependency("${1:name}", "${2:^1.0.0}") }',
           'Runtime dependencies. Prefer `fly add`, which also re-locks.'),
     field('devDependencies', 'Dependency[] devDependencies = { new Dependency("${1:name}", "${2:^1.0.0}") }',
@@ -56,13 +63,51 @@ function makeFields(flyVer: string): vscode.CompletionItem[] {
     ];
 }
 
-/** Constructors usable inside an array literal. */
-const CONSTRUCTORS: vscode.CompletionItem[] = [
+/** Entries usable inside an array literal, tagged with the field they belong to. */
+const ENTRIES: vscode.CompletionItem[] = [
+    (() => {
+        const i = new vscode.CompletionItem('target { name = … }', vscode.CompletionItemKind.Struct);
+        i.insertText    = new vscode.SnippetString(
+            '{ name = "${1:app}", srcDirs = { "${2:src}" }${3:, entry = "${4:src/main.fly}"} }');
+        i.filterText    = 'target';
+        i.documentation = new vscode.MarkdownString(
+            'One build target in the named form. Also: `path`, `files`, `lib`, `os`, '
+          + '`artifact`, `libDirs`, `linkLibs`, `flags`, `dir`, `copy`, `rpaths`.');
+        return i;
+    })(),
+    (() => {
+        const i = new vscode.CompletionItem('target (library)', vscode.CompletionItemKind.Struct);
+        i.insertText    = new vscode.SnippetString(
+            '{ name = "${1:mylib}", srcDirs = { "${2:lib}" }, lib = "${3|static,dynamic,both|}" }');
+        i.filterText    = 'target library';
+        i.documentation = new vscode.MarkdownString(
+            'A library target: one merged object plus a `.fly.h` header per public module.');
+        return i;
+    })(),
+    (() => {
+        const i = new vscode.CompletionItem('target (copy files)', vscode.CompletionItemKind.Struct);
+        i.insertText    = new vscode.SnippetString(
+            '{ name = "${1:assets}", dir = "${2:share}", copy = { "${3:assets}" } }');
+        i.filterText    = 'target copy';
+        i.documentation = new vscode.MarkdownString(
+            'A target with no sources compiles nothing: it copies files or whole '
+          + 'directories into `<output>/<dir>` (`dir/prefix*suffix` takes the matching files).');
+        return i;
+    })(),
+    (() => {
+        const i = new vscode.CompletionItem('profile { name = … }', vscode.CompletionItemKind.Struct);
+        i.insertText    = new vscode.SnippetString(
+            '{ name = "${1:release}", optLevel = ${2:3}, debugInfo = ${3:false}, warningsAsErrors = ${4:false} }');
+        i.filterText    = 'profile';
+        i.documentation = new vscode.MarkdownString(
+            'One build profile, selected with `fly build --profile <name>`.');
+        return i;
+    })(),
     (() => {
         const i = new vscode.CompletionItem('new Target', vscode.CompletionItemKind.Constructor);
         i.insertText    = new vscode.SnippetString('new Target("${1:app}", "${2:src/main.fly}", "${3}")');
         i.documentation = new vscode.MarkdownString(
-            'One build target: `(name, path, lib)`. Empty `lib` = executable.');
+            'One build target, short form: `(name, path, lib)`. Empty `lib` = executable.');
         return i;
     })(),
     (() => {
@@ -89,12 +134,60 @@ const CONSTRUCTORS: vscode.CompletionItem[] = [
     })(),
 ];
 
-/** True when the cursor sits inside an unclosed `{` on this line — an array literal. */
-function insideBraces(line: string, col: number): boolean {
-    const before = line.slice(0, col);
-    const opens  = (before.match(/\{/g) || []).length;
-    const closes = (before.match(/\}/g) || []).length;
-    return opens > closes;
+/** Which array field each entry of ENTRIES belongs to, by its label. */
+function entryField(label: string): string {
+    if (label.includes('Dependency')) return 'dependencies';
+    if (label.startsWith('profile')) return 'profiles';
+    return 'targets';
+}
+
+/**
+ * Where the cursor is in the manifest: brace depth (0 = top level, 1 = the
+ * class body, 2+ = inside an initializer) and, inside one, the field being
+ * initialized. Braces in strings and comments do not count.
+ */
+function cursorContext(text: string): { depth: number; field: string } {
+    let depth = 0;
+    let field = '';
+    let i = 0;
+    while (i < text.length) {
+        const c = text[i];
+        const c2 = text[i + 1];
+        if (c === '/' && c2 === '/') {
+            const nl = text.indexOf('\n', i);
+            if (nl < 0) break;
+            i = nl;
+            continue;
+        }
+        if (c === '/' && c2 === '*') {
+            const end = text.indexOf('*/', i + 2);
+            if (end < 0) break;
+            i = end + 2;
+            continue;
+        }
+        if (c === '"') {
+            i++;
+            while (i < text.length && text[i] !== '"') {
+                if (text[i] === '\\') i++;
+                i++;
+            }
+            i++;
+            continue;
+        }
+        if (c === '{') {
+            if (depth === 1) {
+                // `<Type>[] <field> = {` — the name right before the `=`.
+                const m = text.slice(0, i).match(/([A-Za-z_]\w*)\s*=\s*$/);
+                field = m ? m[1] : '';
+            }
+            depth++;
+        } else if (c === '}') {
+            depth = Math.max(0, depth - 1);
+            if (depth <= 1) field = '';
+        }
+        i++;
+    }
+    return { depth, field };
 }
 
 export class ManifestCompletionProvider implements vscode.CompletionItemProvider {
@@ -120,11 +213,21 @@ export class ManifestCompletionProvider implements vscode.CompletionItemProvider
         // placeholder stays empty); later ones use the cached detection.
         this.refreshVersion();
         const line = document.lineAt(position.line).text;
+        const ctx  = cursorContext(document.getText(new vscode.Range(new vscode.Position(0, 0), position)));
 
-        // Inside an array literal the useful completions are the constructors.
-        if (insideBraces(line, position.character)) return CONSTRUCTORS;
+        // Inside an array literal — on the declaration's own line or on a line
+        // of its own — the useful completions are the entries of THAT field.
+        if (ctx.depth >= 2) {
+            const field = ctx.field === 'devDependencies' ? 'dependencies' : ctx.field;
+            // Directly inside the array only: within an entry `{ name = … }`
+            // there is no whole entry left to offer.
+            if (ctx.depth > 2) return [];
+            const own = ENTRIES.filter(e => entryField(String(e.label)) === field);
+            return own.length > 0 ? own : [];
+        }
 
         // Only offer field declarations at the start of a line inside the class body.
+        if (ctx.depth !== 1) return [];
         if (!/^\s*[A-Za-z\[\]]*$/.test(line.slice(0, position.character))) return [];
         return makeFields(this.flyVer);
     }
